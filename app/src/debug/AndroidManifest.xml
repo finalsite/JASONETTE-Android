@@ -11,6 +11,12 @@
         android:supportsRtl="true"
         tools:replace="android:name"
         android:theme="@style/AppTheme">
+        <activity android:name=".Core.SplashActivity" android:theme="@style/SplashTheme" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
