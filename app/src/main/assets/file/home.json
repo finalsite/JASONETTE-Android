@@ -26,6 +26,29 @@
             "font": "HelveticaNeue-Bold",
             "size": "17"
           }
+        },
+        {
+          "type": "image",
+          "url": "file://menu.png",
+          "style": {
+            "right": "15",
+            "top": "25",
+            "width": "32"
+          },
+          "action": {
+            "type": "$href",
+            "options": {
+              "url": "file://menu.json",
+              "transition": "modal"
+            },
+            "success": {
+              "type": "$href",
+              "options": {
+                "url": "{{$jason.menu_selection}}",
+                "transition": "replace"
+              }
+            }
+          }
         }
       ]
     }
