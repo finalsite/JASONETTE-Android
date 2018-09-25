@@ -89,6 +89,7 @@ public class JasonImageComponent {
 
     private static void gif(JSONObject component, View view, Context context){
         Object new_url = JasonImageComponent.resolve_url(component, context);
+
         Glide
             .with(context)
             .load(new_url)
