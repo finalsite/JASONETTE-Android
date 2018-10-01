@@ -530,6 +530,31 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         if (component_type.equalsIgnoreCase("vertical") || component_type.equalsIgnoreCase("horizontal")) {
                             // the child is also a layout
                             LinearLayout child_layout = buildLayout(new LinearLayout(context), component, item, ++level);
+
+                            // allow nested layouts to handle actions
+                            if (component.has("action") || component.has("href")) {
+                                child_layout.setClickable(true);
+                                child_layout.setTag(component);
+                                View.OnClickListener clickListener = new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        JSONObject item = (JSONObject) view.getTag();
+                                        try {
+                                            if (item.has("action")) {
+                                                JSONObject action = item.getJSONObject("action");
+                                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                                            } else if (item.has("href")) {
+                                                JSONObject href = item.getJSONObject("href");
+                                                JSONObject action = new JSONObject().put("type", "$href").put("options", href);
+                                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                                            }
+                                        } catch (Exception e) {
+                                        }
+                                    }
+                                };
+                                child_layout.setOnClickListener(clickListener);
+                            }
+
                             layout.addView(child_layout);
                             if (i > 0) {
                                 add_spacing(child_layout, item, type);
