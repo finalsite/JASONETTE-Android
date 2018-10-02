@@ -548,7 +548,8 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                                 JSONObject action = new JSONObject().put("type", "$href").put("options", href);
                                                 ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
                                             }
-                                        } catch (Exception e) {
+                                        } catch (JSONException e) {
+                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                                         }
                                     }
                                 };
