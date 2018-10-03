@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Finalsite</string>
-    <string name="url">file://home.json</string>
+    <string name="url">https://bb19ac26.ngrok.io/fs/apps/1/home.json</string>
     <string name="launch">file://preload.json</string>
 </resources>
