@@ -123,7 +123,6 @@ public class JasonLayout {
                 layoutParams.weight = weight;
             }
 
-
             return layoutParams;
 
         } catch (Exception e){
