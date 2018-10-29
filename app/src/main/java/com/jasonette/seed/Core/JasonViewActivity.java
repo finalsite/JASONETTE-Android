@@ -228,10 +228,16 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         // Parsing Intent
         Intent intent = getIntent();
 
+        if (intent.hasExtra("transition") && !intent.getStringExtra("transition").equalsIgnoreCase("modal")) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+
         // Launch Action Payload Handling.
         // We will store this and queue it up at onLoad() after the first action call chain has finished
         // And then execute it on "unlock" of that call chain
         launch_action = null;
+
         if (intent.hasExtra("href")) {
             try {
                 JSONObject href = new JSONObject(intent.getStringExtra("href"));
@@ -309,6 +315,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
 
     }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
+    }
+
     private void setup_agents() {
         try {
             JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
@@ -1477,6 +1490,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         preload = action.getJSONObject("options").getJSONObject("preload");
                     }
                     Intent intent = new Intent(this, JasonViewActivity.class);
+                    intent.putExtra("transition", transition);
+
                     intent.putExtra("depth", depth);
                     if(params!=null) {
                         intent.putExtra("params", params);
@@ -1491,6 +1506,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     removeListViewOnItemTouchListeners();
 
                     Intent intent = new Intent(this, JasonViewActivity.class);
+                    intent.putExtra("transition", transition);
                     if(params!=null) {
                         intent.putExtra("params", params);
                     }
@@ -1502,6 +1518,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     onRefresh();
                 } else {
                     Intent intent = new Intent(this, JasonViewActivity.class);
+                    intent.putExtra("transition", transition);
                     intent.putExtra("url", url);
                     if(params != null) {
                         intent.putExtra("params", params);
