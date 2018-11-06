@@ -184,7 +184,7 @@ public class JasonComponent {
                     } else {
                         // NONE Explicitly stated.
                         // Need to bubble up all the way to the root viewholder.
-                        View cursor = view;
+                        View cursor = v;
                         while(cursor.getParent() != null) {
                             JSONObject item = (JSONObject)(((View)cursor.getParent()).getTag());
                             if (item!=null && (item.has("action") || item.has("href"))) {

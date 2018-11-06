@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import com.commonsware.cwac.cam2.AbstractCameraActivity;
 import com.commonsware.cwac.cam2.CameraActivity;
@@ -79,6 +80,39 @@ public class JasonMediaAction {
         }
     }
 
+
+    /**********************************
+     *
+     * Show document
+     *
+     **********************************/
+
+    public void showDocument(final JSONObject action, JSONObject data, final JSONObject event, final Context context) {
+        try {
+            if(action.has("options")){
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                if(action.getJSONObject("options").has("url")){
+                    String url = action.getJSONObject("options").getString("url");
+                    String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+                    Log.d("LOOK HERE JERKFACE", url);
+
+                    if (extension != null) {
+                        intent.setDataAndType(Uri.parse(url), MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension));
+                    }
+
+                    if(intent.resolveActivity(context.getPackageManager()) == null) {
+                        // if there isn't an app that handles the file type fall back to loading it in the browser
+                        // TODO Intent will open pdfs if we download them first
+                        intent.setDataAndType(Uri.parse(url), "text/html");
+                    }
+                    context.startActivity(intent);
+                }
+                JasonHelper.next("success", action, new JSONObject(), event, context);
+            }
+        } catch (Exception e) {
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        }
+    }
 
     /**********************************
      *
