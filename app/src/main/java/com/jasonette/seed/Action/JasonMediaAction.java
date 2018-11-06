@@ -94,7 +94,6 @@ public class JasonMediaAction {
                 if(action.getJSONObject("options").has("url")){
                     String url = action.getJSONObject("options").getString("url");
                     String extension = MimeTypeMap.getFileExtensionFromUrl(url);
-                    Log.d("LOOK HERE JERKFACE", url);
 
                     if (extension != null) {
                         intent.setDataAndType(Uri.parse(url), MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension));
