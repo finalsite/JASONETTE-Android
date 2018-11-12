@@ -22,6 +22,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.LinearSmoothScroller;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
@@ -34,7 +35,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
@@ -77,6 +77,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.bumptech.glide.Glide.with;
+import static java.lang.Integer.parseInt;
 
 public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
     private JasonToolbar toolbar;
@@ -130,8 +131,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
      * JASON ACTIVITY LIFECYCLE MANAGEMENT
      *
      ************************************************************/
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1653,6 +1652,14 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         listView.smoothScrollToPosition(0);
                     } else if(position.equalsIgnoreCase("bottom")) {
                         listView.smoothScrollToPosition(listView.getAdapter().getItemCount() - 1);
+                    } else {
+                        RecyclerView.SmoothScroller smoothScroller = new LinearSmoothScroller(context) {
+                            @Override protected int getVerticalSnapPreference() {
+                                return LinearSmoothScroller.SNAP_TO_START;
+                            }
+                        };
+                        smoothScroller.setTargetPosition(((ItemAdapter)listView.getAdapter()).getHeaderAt(parseInt(position)));
+                        listView.getLayoutManager().startSmoothScroll(smoothScroller);
                     }
                 }
             }
@@ -2126,6 +2133,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         // TEMPORARY: Add header as an item
                         if (section.has("header")) {
                             JSONObject header = (JSONObject) section.getJSONObject("header");
+                            header.put("isHeader", true);
                             section_items.add(header);
                         }
                         if (section.has("items")) {
@@ -2139,6 +2147,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         // vertical type (default)
                         if (section.has("header")) {
                             JSONObject header = (JSONObject) section.getJSONObject("header");
+                            header.put("isHeader", true);
                             section_items.add(header);
                         }
                         if (section.has("items")) {
@@ -2751,7 +2760,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             left = (int)JasonHelper.pixels(this, badge_style.getString("left"), "horizontal");
                         }
                         if(badge_style.has("top")) {
-                            top = (int)JasonHelper.pixels(this, String.valueOf(Integer.parseInt(badge_style.getString("top"))), "vertical");
+                            top = (int)JasonHelper.pixels(this, String.valueOf(parseInt(badge_style.getString("top"))), "vertical");
                         }
                         layoutParams.setMargins(left,top,0,0);
                         itemView.addView(v);

@@ -254,6 +254,23 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         return this.items.size();
     }
 
+    // returns position of n-th header in the main items list
+    // jasonette currently fudges headers in as a main item which makes distinguishing sections difficult
+    // using headers is the only consistent way of counting sections
+    public int getHeaderAt(int position) {
+        int header_count = 0;
+        for(int i=0; i < this.items.size() - 1; i++) {
+            JSONObject json = this.items.get(i);
+            if(json.has("isHeader")) {
+                header_count++;
+            }
+            if (header_count > position) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     /********************************************************
      *
      * ViewHolderFactory => Creates ViewHolders
