@@ -3,6 +3,7 @@ import android.util.Log;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
+import com.urbanairship.push.fcm.AirshipFirebaseInstanceIdService;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Launcher.Launcher;
 
@@ -11,7 +12,9 @@ import org.json.JSONObject;
 public class JasonPushRegisterService extends FirebaseInstanceIdService{
     @Override
     public void onTokenRefresh() {
+        AirshipFirebaseInstanceIdService.processTokenRefresh(Launcher.getCurrentContext());
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
+
         if (refreshedToken != null) {
             try {
                 JSONObject payload = new JSONObject();

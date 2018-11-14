@@ -3,7 +3,7 @@ package com.jasonette.seed.Component;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;

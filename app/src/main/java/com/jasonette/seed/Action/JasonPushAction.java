@@ -7,6 +7,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Launcher.Launcher;
+import com.urbanairship.push.fcm.AirshipFirebaseInstanceIdService;
 
 import org.json.JSONObject;
 
@@ -17,7 +18,9 @@ import org.json.JSONObject;
 
 public class JasonPushAction {
     public void register(final JSONObject action, JSONObject data, final JSONObject event, Context context) {
+        AirshipFirebaseInstanceIdService.processTokenRefresh(Launcher.getCurrentContext());
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
+
         if(refreshedToken != null){
             // Token exists => already registered => Immediately trigger $push.onregister
             try {
