@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.urbanairship.UAirship;
 import okhttp3.OkHttpClient;
 import com.jasonette.seed.BuildConfig;
 import com.jasonette.seed.Service.agent.JasonAgentService;
@@ -115,6 +116,7 @@ public class Launcher extends Application {
     public void onCreate() {
         super.onCreate();
 
+        UAirship.shared().getPushManager().setUserNotificationsEnabled(true);
         ViewTarget.setTagId(R.id.glide_request);
 
         // Look for all extensions and initialize them if they have initialize class methods

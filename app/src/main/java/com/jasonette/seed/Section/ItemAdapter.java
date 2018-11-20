@@ -1,8 +1,8 @@
 package com.jasonette.seed.Section;
 
 import android.content.Context;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -438,6 +438,9 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             if (i > 0) {
                                 add_spacing(childLayout, item, item.getString("type"));
                             }
+
+                            attach_layout_actions(childLayout, component);
+
                         } else {
                             View child_component = buildComponent(component, item);
                             if (i > 0) {
@@ -548,35 +551,11 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             // the child is also a layout
                             LinearLayout child_layout = buildLayout(new LinearLayout(context), component, item, ++level);
 
-                            // allow nested layouts to handle actions
-                            if (component.has("action") || component.has("href")) {
-                                child_layout.setClickable(true);
-                                child_layout.setTag(component);
-                                View.OnClickListener clickListener = new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
-                                        JSONObject item = (JSONObject) view.getTag();
-                                        try {
-                                            if (item.has("action")) {
-                                                JSONObject action = item.getJSONObject("action");
-                                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
-                                            } else if (item.has("href")) {
-                                                JSONObject href = item.getJSONObject("href");
-                                                JSONObject action = new JSONObject().put("type", "$href").put("options", href);
-                                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
-                                            }
-                                        } catch (JSONException e) {
-                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                        }
-                                    }
-                                };
-                                child_layout.setOnClickListener(clickListener);
-                            }
-
                             layout.addView(child_layout);
                             if (i > 0) {
                                 add_spacing(child_layout, item, type);
                             }
+                            attach_layout_actions(child_layout, component);
                             // From item1, start adding margin-top (item0 shouldn't have margin-top)
                         } else {
                             View child_component = buildComponent(component, item);
@@ -626,6 +605,39 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 return view;
             }
 
+
+        }
+
+        // handle adding or removing click handlers on recycled nested layouts
+        private void attach_layout_actions(View view, JSONObject item) {
+
+            // allow nested layouts to handle actions
+            if (item.has("action") || item.has("href")) {
+                view.setClickable(true);
+                view.setTag(item);
+                View.OnClickListener clickListener = new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        JSONObject item = (JSONObject) view.getTag();
+                        try {
+                            if (item.has("action")) {
+                                JSONObject action = item.getJSONObject("action");
+                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                            } else if (item.has("href")) {
+                                JSONObject href = item.getJSONObject("href");
+                                JSONObject action = new JSONObject().put("type", "$href").put("options", href);
+                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                            }
+                        } catch (JSONException e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                        }
+                    }
+                };
+                view.setOnClickListener(clickListener);
+            } else {
+                view.setOnClickListener(null);
+                view.setClickable(false);
+            }
 
         }
 
