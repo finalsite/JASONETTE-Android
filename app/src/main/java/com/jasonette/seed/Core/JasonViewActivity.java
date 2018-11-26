@@ -1727,7 +1727,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                 }
 
-                onLoad();
+                /*
+                 I'm not sure what case this is handling but this is triggering load events to
+                  happen before the view has rendered, there is another call to this elsewhere after
+                  the view has rendered that seems to always still be called if this one isn't.
+                  (Scrolling on initial load does not work if this is called here, re APP-25)
+                 */
+                // onLoad();
 
             } catch (JSONException e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
