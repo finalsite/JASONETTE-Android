@@ -101,8 +101,6 @@ public class JasonModel{
         };
     }
 
-
-
     public void fetch() {
         if(url.startsWith("file://")) {
             fetch_local(url);
@@ -166,8 +164,6 @@ public class JasonModel{
                     .url(url)
                     .build();
 
-
-
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
@@ -190,8 +186,6 @@ public class JasonModel{
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
     }
-
-
 
     private void include(String res){
         String regex =  "\"([+@])\"[ ]*:[ ]*\"(([^\"@]+)(@))?([^\"]+)\"";
@@ -227,7 +221,6 @@ public class JasonModel{
 
     private void resolve_and_build(String res){
         try {
-
             jason = new JSONObject(res);
 
             // "include" handling
@@ -373,5 +366,4 @@ public class JasonModel{
 
         }
     }
-
 }

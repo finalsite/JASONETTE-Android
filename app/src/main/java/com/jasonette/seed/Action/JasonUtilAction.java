@@ -58,7 +58,7 @@ public class JasonUtilAction {
                     } else {
                         result = title;
                     }
-                    Snackbar snackbar = Snackbar.make(((JasonViewActivity)context).rootLayout, result, Snackbar.LENGTH_LONG);
+                    Snackbar snackbar = Snackbar.make(((JasonViewActivity) context).getFragmentContainer(), result, Snackbar.LENGTH_LONG);
                     snackbar.show();
                 } catch (Exception e){
                     Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
