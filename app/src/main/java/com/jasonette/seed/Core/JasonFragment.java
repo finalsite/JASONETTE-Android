@@ -213,8 +213,7 @@ public class JasonFragment extends Fragment {
         } else if (intent.hasExtra("action")) {
             try {
                 launch_action = new JSONObject(intent.getStringExtra("action"));
-            } catch (Exception e) {
-            }
+            } catch (Exception e) { }
         }
 
         if(intent.hasExtra("url")){
@@ -229,7 +228,6 @@ public class JasonFragment extends Fragment {
                 preload = new JSONObject(intent.getStringExtra("preload"));
             } catch (Exception e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                preload = null;
             }
         } else {
             if (intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
@@ -238,8 +236,6 @@ public class JasonFragment extends Fragment {
                 if (launch_url != null && launch_url.length() > 0) {
                     // if preload is specified, use that url
                     preload = (JSONObject)JasonHelper.read_json(launch_url, context);
-                } else {
-                    preload = null;
                 }
             }
         }
@@ -248,12 +244,12 @@ public class JasonFragment extends Fragment {
         model = ((JasonViewActivity) context).createModel(url, intent);
 
         Uri uri = intent.getData();
-        if(uri != null && uri.getHost().contains("oauth")) {
+        if (uri != null && uri.getHost().contains("oauth")) {
             loaded = true; // in case of oauth process we need to set loaded to true since we know it's already been loaded.
             return rootLayout;
         }
 
-        if(savedInstanceState != null) {
+        if (savedInstanceState != null) {
             // Restore model and url
             // Then rebuild the view
             try {
@@ -292,8 +288,7 @@ public class JasonFragment extends Fragment {
                             try {
                                 JasonAgentService agentService = (JasonAgentService) ((Launcher) context.getApplicationContext()).services.get("JasonAgentService");
                                 WebView agent = agentService.setup((JasonViewActivity) context, agents.getJSONObject(key), key);
-                            } catch (JSONException e) {
-                            }
+                            } catch (JSONException e) { }
                         }
                     });
                 }
@@ -325,9 +320,7 @@ public class JasonFragment extends Fragment {
                     }
                 });
             }
-        } catch (Exception e) {
-
-        }
+        } catch (Exception e) { }
     }
 
     public void onRefresh() {
@@ -361,10 +354,8 @@ public class JasonFragment extends Fragment {
             } catch (Exception e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
-        } else {
-            if (preload != null) {
-                setup_body(preload);
-            }
+        } else if (preload != null) {
+            setup_body(preload);
         }
 
         // Fetch
@@ -430,7 +421,7 @@ public class JasonFragment extends Fragment {
             if (model.session != null) temp_model.put("session", model.session);
             if (model.action != null) temp_model.put("action", model.action);
             temp_model.put("depth", depth);
-            if (model.url!= null){
+            if (model.url != null){
                 editor.putString(model.url, temp_model.toString());
                 editor.commit();
             }
@@ -455,27 +446,24 @@ public class JasonFragment extends Fragment {
         resumed = true;
 
         SharedPreferences pref = context.getSharedPreferences("model", 0);
-        if(model.url!=null && pref.contains(model.url)) {
+        if(model.url != null && pref.contains(model.url)) {
             String str = pref.getString(model.url, null);
             try {
                 JSONObject temp_model = new JSONObject(str);
-                if(temp_model.has("url")) model.url = temp_model.getString("url");
-                if(temp_model.has("jason")) model.jason = temp_model.getJSONObject("jason");
-                if(temp_model.has("rendered")) model.rendered = temp_model.getJSONObject("rendered");
-                if(temp_model.has("state")) model.state = temp_model.getJSONObject("state");
-                if(temp_model.has("var")) model.var = temp_model.getJSONObject("var");
-                if(temp_model.has("cache")) model.cache = temp_model.getJSONObject("cache");
-                if (temp_model.getInt("depth") == depth) {
-                    if(temp_model.has("params")) model.params = temp_model.getJSONObject("params");
-                }
-                if(temp_model.has("session")) model.session = temp_model.getJSONObject("session");
-                if(temp_model.has("action")) model.action = temp_model.getJSONObject("action");
+                if (temp_model.has("url")) model.url = temp_model.getString("url");
+                if (temp_model.has("jason")) model.jason = temp_model.getJSONObject("jason");
+                if (temp_model.has("rendered")) model.rendered = temp_model.getJSONObject("rendered");
+                if (temp_model.has("state")) model.state = temp_model.getJSONObject("state");
+                if (temp_model.has("var")) model.var = temp_model.getJSONObject("var");
+                if (temp_model.has("cache")) model.cache = temp_model.getJSONObject("cache");
+                if (temp_model.getInt("depth") == depth && temp_model.has("params")) model.params = temp_model.getJSONObject("params");
+                if (temp_model.has("session")) model.session = temp_model.getJSONObject("session");
+                if (temp_model.has("action")) model.action = temp_model.getJSONObject("action");
 
                 // Delete shared preference after resuming
                 SharedPreferences.Editor editor = pref.edit();
                 editor.remove(model.url);
                 editor.commit();
-
             } catch (Exception e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
@@ -504,11 +492,9 @@ public class JasonFragment extends Fragment {
         // It's because onCall/onSuccess/onError callbacks are not yet attached when onActivityResult() is called.
         // Need to wait till this point.
         try {
-            if(intent_to_resolve != null) {
-                if(intent_to_resolve.has("type")){
-                    ((Launcher) context.getApplicationContext()).trigger(intent_to_resolve, (JasonViewActivity) context);
-                    intent_to_resolve = null;
-                }
+            if(intent_to_resolve != null && intent_to_resolve.has("type")) {
+                ((Launcher) context.getApplicationContext()).trigger(intent_to_resolve, (JasonViewActivity) context);
+                intent_to_resolve = null;
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -606,12 +592,9 @@ public class JasonFragment extends Fragment {
         try {
             JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
             JSONObject events = head.getJSONObject("actions");
-            if(events!=null && events.has("$load")){
-                // nothing
-            } else {
+            if(events == null || !events.has("$load")) {
                 onShow();
             }
-
             if (launch_action != null) {
                 JSONObject copy = new JSONObject(launch_action.toString());
                 launch_action = null;
@@ -661,7 +644,7 @@ public class JasonFragment extends Fragment {
             }
             final JSONObject event = ev;
 
-            model.set("state", (JSONObject)data);
+            model.set("state", data);
 
             if (action instanceof JSONArray) {
                 // resolve
@@ -683,7 +666,6 @@ public class JasonFragment extends Fragment {
     }
 
     private void final_call(final JSONObject action, final JSONObject data, final JSONObject event, final Context context) {
-
         try {
             if (action.toString().equalsIgnoreCase("{}")) {
                 // no action to execute
@@ -694,31 +676,25 @@ public class JasonFragment extends Fragment {
             // Handle trigger first
             if (action.has("trigger")) {
                 trigger(action, data, event, context);
-            } else {
-                if(action.length() == 0){
-                    return;
-                }
-                // If not trigger, regular call
-                if(action.has("options")){
-                    // if action has options, we need to parse out the options first
-                    Object options = action.get("options");
-                    JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
-                        @Override
-                        public void onFinished(JSONObject parsed_options) {
-                            try {
-                                JSONObject action_with_parsed_options = new JSONObject(action.toString());
-                                action_with_parsed_options.put("options", parsed_options);
-                                exec(action_with_parsed_options, model.state, event, context);
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
+            } else if (action.has("options")) {
+                // if action has options, we need to parse out the options first
+                Object options = action.get("options");
+                JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                    @Override
+                    public void onFinished(JSONObject parsed_options) {
+                        try {
+                            JSONObject action_with_parsed_options = new JSONObject(action.toString());
+                            action_with_parsed_options.put("options", parsed_options);
+                            exec(action_with_parsed_options, model.state, event, context);
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
-                    });
-                    JasonParser.getInstance(context).parse("json", model.state, options, context);
-                } else {
-                    // otherwise we can just call immediately
-                    exec(action, model.state, event, context);
-                }
+                    }
+                });
+                JasonParser.getInstance(context).parse("json", model.state, options, context);
+            } else if (action.length() > 0) {
+                // otherwise we can just call immediately
+                exec(action, model.state, event, context);
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -784,9 +760,7 @@ public class JasonFragment extends Fragment {
          ****************************************************************************************/
 
         try {
-
             // construct options
-
             if(action.has("options")) {
                 Object options = action.get("options");
                 JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
@@ -801,7 +775,6 @@ public class JasonFragment extends Fragment {
                 });
                 JasonParser.getInstance(context).parse("json", model.state, options, context);
             } else {
-                JSONObject options = new JSONObject();
                 invoke_lambda(action, data, null, context);
             }
 
@@ -819,15 +792,15 @@ public class JasonFragment extends Fragment {
 
             JSONObject args = new JSONObject();
             args.put("name", action.getString("trigger"));
-            if(options!=null) {
+            if (options!=null) {
                 args.put("options", options);
             }
             lambda.put("options", args);
 
-            if(action.has("success")) {
+            if (action.has("success")) {
                 lambda.put("success", action.get("success"));
             }
-            if(action.has("error")) {
+            if (action.has("error")) {
                 lambda.put("error", action.get("error"));
             }
 
@@ -840,7 +813,6 @@ public class JasonFragment extends Fragment {
 
     public void simple_trigger(final String event_name, JSONObject data, Context context){
         try{
-
             if ((isexecuting || !resumed) && event_queue.size() > 0) {
                 JSONObject event_store = new JSONObject();
                 event_store.put("event_name", event_name);
@@ -936,14 +908,14 @@ public class JasonFragment extends Fragment {
         } catch (Exception e){
             // Action doesn't exist yet
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                /**
-                    TODO: Figure out why this callback loop suddenly happens on events page with DebugLauncher as context instead
-                    of a jason view activity
-                    The point of this block appears to have been to pop a message to the developer to say the action was not
-                    implemented yet, the way this callback is getting hit however is also failing for an unknown reason
-                    This is then causing an infinite loop of trying to call the util banner with a DebugLauncher context
-                    when it should have a JasonViewActivity context
-                **/
+            /**
+                TODO: Figure out why this callback loop suddenly happens on events page with DebugLauncher as context instead
+                of a jason view activity
+                The point of this block appears to have been to pop a message to the developer to say the action was not
+                implemented yet, the way this callback is getting hit however is also failing for an unknown reason
+                This is then causing an infinite loop of trying to call the util banner with a DebugLauncher context
+                when it should have a JasonViewActivity context
+            **/
             /**
 
                 try {
@@ -971,7 +943,6 @@ public class JasonFragment extends Fragment {
     public BroadcastReceiver onSuccess = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-
             try {
                 String action_string = intent.getStringExtra("action");
                 String data_string = intent.getStringExtra("data");
@@ -1244,7 +1215,6 @@ public class JasonFragment extends Fragment {
                     JasonParser.getInstance(context).parse("json", model.state, new_options, context);
 
                 }
-
                 // 3. If `options` doesn't exist, forward the data from the previous action
                 else {
                     call(lambda.toString(), data.toString(), caller, context);
@@ -1254,7 +1224,6 @@ public class JasonFragment extends Fragment {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             JasonHelper.next("error", action, new JSONObject(), new JSONObject(), context);
         }
-
     }
 
     public void require(final JSONObject action, JSONObject data, final JSONObject event, final Context context){
@@ -1285,14 +1254,12 @@ public class JasonFragment extends Fragment {
                     // must be either array or string
                     if(val instanceof JSONArray){
                         for (int i = 0; i < ((JSONArray)val).length(); i++) {
-                            if(!urlSet.contains(((JSONArray) val).getString(i))){
+                            if (!urlSet.contains(((JSONArray) val).getString(i))) {
                                 urlSet.add(((JSONArray) val).getString(i));
                             }
                         }
-                    } else if(val instanceof String){
-                        if(!urlSet.contains(val)){
-                            urlSet.add(((String)val));
-                        }
+                    } else if (val instanceof String && !urlSet.contains(val)) {
+                        urlSet.add(((String) val));
                     }
                 }
                 if(urlSet.size()>0) {
@@ -1335,8 +1302,6 @@ public class JasonFragment extends Fragment {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             JasonHelper.next("error", action, new JSONObject(), event, context);
         }
-        // get all urls
-
     }
 
     public void render(final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
@@ -1344,17 +1309,17 @@ public class JasonFragment extends Fragment {
             String template_name = "body";
             String type = "json";
 
-            if(action.has("options")){
+            if (action.has("options")) {
                 JSONObject options = action.getJSONObject("options");
-                if(options.has("template")){
+                if (options.has("template")) {
                     template_name = options.getString("template");
                 }
                 // parse the template with JSON
-                if(options.has("data")){
+                if (options.has("data")) {
                     data.put("$jason", options.get("data"));
                 }
 
-                if(options.has("type")){
+                if (options.has("type")) {
                     type = options.getString("type");
                 }
             }
@@ -1385,7 +1350,7 @@ public class JasonFragment extends Fragment {
 
     public void set(final JSONObject action, JSONObject data, JSONObject event, Context context){
         try{
-            if(action.has("options")){
+            if (action.has("options")) {
                 JSONObject options = action.getJSONObject("options");
                 model.var = JasonHelper.merge(model.var, options);
             }
@@ -1394,14 +1359,6 @@ public class JasonFragment extends Fragment {
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
-    }
-
-    public void back ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        ((JasonViewActivity) context).finish();
-    }
-
-    public void close ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        ((JasonViewActivity) context).finish();
     }
 
     public void ok ( final JSONObject action, JSONObject data, JSONObject event, Context context){
@@ -1536,15 +1493,14 @@ public class JasonFragment extends Fragment {
         if(jason!=null) {
             try {
 
-                // If the returned body matches the rendered body skip build phase.
-                if (model.rendered != null && jason.getJSONObject("$jason").has("body")
-                        && model.rendered.toString().equalsIgnoreCase(jason.getJSONObject("$jason").getJSONObject("body").toString())) {
-                    // nothing
-                } else if (jason.getJSONObject("$jason").has("body")) {
+                if (jason.getJSONObject("$jason").has("body")) {
                     final JSONObject body;
                     body = jason.getJSONObject("$jason").getJSONObject("body");
-                    model.set("state", new JSONObject());
-                    setup_body(body);
+                    // If the returned body matches the rendered body skip build phase.
+                    if (model.rendered == null || !model.rendered.toString().equalsIgnoreCase(body.toString())) {
+                        model.set("state", new JSONObject());
+                        setup_body(body);
+                    }
                 }
 
                 if (jason.getJSONObject("$jason").has("head")) {
@@ -1569,17 +1525,13 @@ public class JasonFragment extends Fragment {
                         }
                     }
 
-                    if (head.has("data")) {
-                        if (head.has("templates")) {
-                            if (head.getJSONObject("templates").has("body")) {
-                                model.set("state", new JSONObject());
-                                render(new JSONObject(), model.state, new JSONObject(), context);
+                    if (head.has("data") && head.has("templates") && head.getJSONObject("templates").has("body")) {
+                        model.set("state", new JSONObject());
+                        render(new JSONObject(), model.state, new JSONObject(), context);
 
-                                // return here so onLoad() below will NOT be triggered.
-                                // onLoad() will be triggered after render has finished
-                                return;
-                            }
-                        }
+                        // return here so onLoad() below will NOT be triggered.
+                        // onLoad() will be triggered after render has finished
+                        return;
                     }
                 }
                 /**
@@ -1595,7 +1547,6 @@ public class JasonFragment extends Fragment {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
         }
-
     }
 
     public void setup_body(final JSONObject body) {
@@ -1712,19 +1663,17 @@ public class JasonFragment extends Fragment {
                                             sectionLayout.setBackground(resource);
                                         }
                                     });
-                                } else {
-                                    if (background.equalsIgnoreCase("camera")) {
-                                        int side = JasonVisionService.FRONT;
-                                        if (cameraManager == null) {
-                                            cameraManager = new JasonVisionService(((JasonViewActivity) context));
-                                            backgroundCameraView = cameraManager.getView();
-                                        }
-                                        cameraManager.setSide(side);
-                                        backgroundCurrentView = backgroundCameraView;
-                                    } else {
-                                        sectionLayout.setBackgroundColor(JasonHelper.parse_color(background));
-                                        ((JasonViewActivity) context).getWindow().getDecorView().setBackgroundColor(JasonHelper.parse_color(background));
+                                } else if (background.equalsIgnoreCase("camera")) {
+                                    int side = JasonVisionService.FRONT;
+                                    if (cameraManager == null) {
+                                        cameraManager = new JasonVisionService(((JasonViewActivity) context));
+                                        backgroundCameraView = cameraManager.getView();
                                     }
+                                    cameraManager.setSide(side);
+                                    backgroundCurrentView = backgroundCameraView;
+                                } else {
+                                    sectionLayout.setBackgroundColor(JasonHelper.parse_color(background));
+                                    ((JasonViewActivity) context).getWindow().getDecorView().setBackgroundColor(JasonHelper.parse_color(background));
                                 }
                             } else {
                                 JSONObject background = (JSONObject)bg;
@@ -1873,9 +1822,9 @@ public class JasonFragment extends Fragment {
                     }
 
                     swipeLayout.setEnabled(false);
-                    if(model.jason != null && model.jason.has("$jason") && model.jason.getJSONObject("$jason").has("head")){
+                    if (model.jason != null && model.jason.has("$jason") && model.jason.getJSONObject("$jason").has("head")) {
                         final JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-                        if(head.has("actions") && head.getJSONObject("actions").has("$pull")) {
+                        if (head.has("actions") && head.getJSONObject("actions").has("$pull")) {
                             // Setup refresh listener which triggers new data loading
                             swipeLayout.setEnabled(true);
                             swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -1894,26 +1843,23 @@ public class JasonFragment extends Fragment {
 
                     if (body.has("style")) {
                         JSONObject style = body.getJSONObject("style");
-                        if (style.has("align")) {
-                            if (style.getString("align").equalsIgnoreCase("bottom")) {
-                                ((LinearLayoutManager) listView.getLayoutManager()).setStackFromEnd(true);
-                                listView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                                    @Override
-                                    public void onLayoutChange(View view, int i, int i1, int i2, int i3, int i4, int i5, int i6, int i7) {
-                                        if (i3 < i7) {
-                                            listView.postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (listView.getAdapter().getItemCount() > 0) {
-                                                        listView.smoothScrollToPosition( listView.getAdapter().getItemCount() - 1);
-                                                    }
+                        if (style.has("align") && style.getString("align").equalsIgnoreCase("bottom")) {
+                            ((LinearLayoutManager) listView.getLayoutManager()).setStackFromEnd(true);
+                            listView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                                @Override
+                                public void onLayoutChange(View view, int i, int i1, int i2, int i3, int i4, int i5, int i6, int i7) {
+                                    if (i3 < i7) {
+                                        listView.postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (listView.getAdapter().getItemCount() > 0) {
+                                                    listView.smoothScrollToPosition( listView.getAdapter().getItemCount() - 1);
                                                 }
-                                            }, 100);
-                                        }
+                                            }
+                                        }, 100);
                                     }
-                                });
-
-                            }
+                                }
+                            });
                         }
                     }
 
@@ -1930,14 +1876,11 @@ public class JasonFragment extends Fragment {
                     }
                     rootLayout.requestLayout();
 
-                    // if the first time being loaded
-                    if(!loaded){
-                        // and if the content has finished fetching (not via remote: true)
-                        if(fetched) {
-                            // trigger onLoad.
-                            // onLoad shouldn't be triggered when just drawing the offline cached view initially
-                            onLoad();
-                        }
+                    // if the first time being loaded and if the content has finished fetching (not via remote: true)
+                    if (!loaded && fetched) {
+                        // trigger onLoad.
+                        // onLoad shouldn't be triggered when just drawing the offline cached view initially
+                        onLoad();
                     }
 
                 } catch (Exception e) {
@@ -1949,10 +1892,10 @@ public class JasonFragment extends Fragment {
 
     private void setup_sections(JSONArray sections){
         section_items = new ArrayList<JSONObject>();
-        if(sections!=null) {
+        if (sections != null) {
             try {
                 for (int i = 0; i < sections.length(); i++) {
-                    JSONObject section = (JSONObject) sections.getJSONObject(i);
+                    JSONObject section = sections.getJSONObject(i);
 
                     // Determine if it's a horizontal section or vertical section
                     // if it's vertical, simply keep adding to the section as individual items
@@ -2009,16 +1952,16 @@ public class JasonFragment extends Fragment {
 
     private void setup_layers(JSONArray layers){
         try{
-            if(layer_items != null) {
+            if (layer_items != null) {
                 for (int j = 0; j < layer_items.size(); j++) {
                     View layerView = layer_items.get(j);
                     rootLayout.removeView(layerView);
                 }
                 layer_items = new ArrayList<View>();
             }
-            if(layers != null) {
+            if (layers != null) {
                 for(int i = 0; i<layers.length(); i++){
-                    JSONObject layer = (JSONObject)layers.getJSONObject(i);
+                    JSONObject layer = layers.getJSONObject(i);
                     if(layer.has("type")){
                         View view = JasonComponentFactory.build(null, layer, null, context);
                         JasonComponentFactory.build(view, layer, null, context);
@@ -2036,24 +1979,24 @@ public class JasonFragment extends Fragment {
     private void stylize_layer(View view, JSONObject component){
         try{
             JSONObject style = JasonHelper.style(component, context);
-            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)view.getLayoutParams();
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) view.getLayoutParams();
 
-            if(style.has("top")){
+            if (style.has("top")) {
                 int top = (int) JasonHelper.pixels(context, style.getString("top"), "vertical");
                 params.topMargin = top;
                 params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
             }
-            if(style.has("left")){
+            if (style.has("left")) {
                 int left = (int) JasonHelper.pixels(context, style.getString("left"), "horizontal");
                 params.leftMargin = left;
                 params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
             }
-            if(style.has("right")){
+            if (style.has("right")) {
                 int right = (int) JasonHelper.pixels(context, style.getString("right"), "horizontal");
                 params.rightMargin = right;
                 params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             }
-            if(style.has("bottom")){
+            if (style.has("bottom")) {
                 int bottom = (int) JasonHelper.pixels(context, style.getString("bottom"), "vertical");
                 params.bottomMargin = bottom;
                 params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -2074,7 +2017,7 @@ public class JasonFragment extends Fragment {
      * @param listener
      */
     public void addListViewOnItemTouchListener(RecyclerView.OnItemTouchListener listener) {
-        if(!listViewOnItemTouchListeners.contains(listener)) {
+        if (!listViewOnItemTouchListeners.contains(listener)) {
             listViewOnItemTouchListeners.add(listener);
             listView.addOnItemTouchListener(listener);
         }
