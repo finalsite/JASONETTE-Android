@@ -166,9 +166,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     @Override
     public boolean onSupportNavigateUp() {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.popBackStack();
+        // call immediate pop so that we can grab the proper currentFragment below for calling onResume
+        fragmentManager.popBackStackImmediate();
         if (fragmentManager.getBackStackEntryCount() == 0) {
             finish();
+        } else {
+            // If the view activity still has a fragment we should call onResume on it
+            currentFragment().onResume();
         }
         return true;
     }
@@ -1383,209 +1387,217 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     public boolean onPrepareOptionsMenu(Menu menu) {
         try {
             menu = toolbar.getMenu();
-            if (model.rendered != null) {
-                if (!model.rendered.has("header")) {
-                    setup_title(new JSONObject());
-                }
-                JSONObject header = model.rendered.getJSONObject("header");
+            // Clear out old menu item if present
+            try {
+                menu.removeItem(0);
+            } catch (Exception e) { }
 
-                header_height = toolbar.getHeight();
+            if (model.rendered == null) {
+                return super.onPrepareOptionsMenu(menu);
+            }
 
-                setup_title(header);
+            if (!model.rendered.has("header")) {
+                setup_title(new JSONObject());
+            }
+            // Breaks by design short circuiting the code when a header isn't present on the view
+            JSONObject header = model.rendered.getJSONObject("header");
 
-                if (header.has("search")) {
-                    SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-                    final JSONObject search = header.getJSONObject("search");
-                    if (searchView == null) {
-                        searchView = new SearchView(this);
-                        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            header_height = toolbar.getHeight();
 
-                        // put the search icon on the right hand side of the toolbar
-                        searchView.setLayoutParams(new Toolbar.LayoutParams(Gravity.RIGHT));
+            setup_title(header);
 
-                        toolbar.addView(searchView);
-                    } else {
-                        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-                    }
+            if (header.has("search")) {
+                SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+                final JSONObject search = header.getJSONObject("search");
+                if (searchView == null) {
+                    searchView = new SearchView(this);
+                    searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
-                    // styling
+                    // put the search icon on the right hand side of the toolbar
+                    searchView.setLayoutParams(new Toolbar.LayoutParams(Gravity.RIGHT));
 
-                    // color
-                    int c;
-                    if (search.has("style") && search.getJSONObject("style").has("color")) {
-                        c = JasonHelper.parse_color(search.getJSONObject("style").getString("color"));
-                    } else if (header.has("style") && header.getJSONObject("style").has("color")) {
-                        c = JasonHelper.parse_color(header.getJSONObject("style").getString("color"));
-                    } else {
-                        c = -1;
-                    }
-                    if (c > 0) {
-                        ImageView searchButton = (ImageView) searchView.findViewById(androidx.appcompat.R.id.search_button);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            searchButton.setImageTintList(ColorStateList.valueOf(JasonHelper.parse_color(header.getJSONObject("style").getString("color"))));
-                        }
-                    }
-
-                    // background
-                    if (search.has("style") && search.getJSONObject("style").has("background")) {
-                        int bc = JasonHelper.parse_color(search.getJSONObject("style").getString("background"));
-                        searchView.setBackgroundColor(bc);
-                    }
-
-                    // placeholder
-                    if (search.has("placeholder")) {
-                        searchView.setQueryHint(search.getString("placeholder"));
-                    }
-
-                    searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
-                        @Override
-                        public boolean onQueryTextSubmit(String s) {
-                            // name
-                            if (search.has("name")) {
-                                try {
-                                    JSONObject kv = new JSONObject();
-                                    kv.put(search.getString("name"), s);
-                                    model.var = JasonHelper.merge(model.var, kv);
-                                    if (search.has("action")) {
-                                        call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    }
-                                } catch (Exception e){
-                                    Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                }
-                            }
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onQueryTextChange(String s) {
-                            if (search.has("action")) {
-                                return false;
-                            } else if (listView != null) {
-                                ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
-                                adapter.filter(s);
-                            }
-                            return true;
-                        }
-                    });
+                    toolbar.addView(searchView);
+                } else {
+                    searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
                 }
 
+                // styling
 
-                if (header.has("menu")) {
-                    JSONObject json = header.getJSONObject("menu");
-
-                    final MenuItem item = menu.add("Menu");
-                    item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-                    // We're going to create a button.
-                    json.put("type", "button");
-
-                    // if it's an image button, both url and image should work
-                    if (json.has("image")) {
-                        json.put("url", json.getString("image"));
+                // color
+                int c;
+                if (search.has("style") && search.getJSONObject("style").has("color")) {
+                    c = JasonHelper.parse_color(search.getJSONObject("style").getString("color"));
+                } else if (header.has("style") && header.getJSONObject("style").has("color")) {
+                    c = JasonHelper.parse_color(header.getJSONObject("style").getString("color"));
+                } else {
+                    c = -1;
+                }
+                if (c > 0) {
+                    ImageView searchButton = (ImageView) searchView.findViewById(androidx.appcompat.R.id.search_button);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        searchButton.setImageTintList(ColorStateList.valueOf(JasonHelper.parse_color(header.getJSONObject("style").getString("color"))));
                     }
+                }
 
-                    // let's override the style so the menu button size has a sane dimension
-                    JSONObject style;
-                    if (json.has("style")) {
-                        style = json.getJSONObject("style");
-                    } else {
-                        style = new JSONObject();
-                    }
+                // background
+                if (search.has("style") && search.getJSONObject("style").has("background")) {
+                    int bc = JasonHelper.parse_color(search.getJSONObject("style").getString("background"));
+                    searchView.setBackgroundColor(bc);
+                }
 
-                    // For image, limit the height so it doesn't look too big
-                    if (json.has("url")) {
-                        style.put("height", JasonHelper.pixels(this, "8", "vertical"));
-                    }
+                // placeholder
+                if (search.has("placeholder")) {
+                    searchView.setQueryHint(search.getString("placeholder"));
+                }
 
-                    json.put("style", style);
-
-                    // Now creating the menuButton and itemview
-                    FrameLayout itemView;
-                    View menuButton;
-                    if (item.getActionView() == null) {
-                        // Create itemView if it doesn't exist yet
-                        itemView = new FrameLayout(this);
-                        menuButton = JasonComponentFactory.build(null, json, null, JasonViewActivity.this);
-                        JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
-                        itemView.addView(menuButton);
-                        item.setActionView(itemView);
-                    } else {
-                        // Reuse the itemView if it already exists
-                        itemView = (FrameLayout)item.getActionView();
-                        menuButton = itemView.getChildAt(0);
-                        JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
-                    }
-
-                    FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-                    menuButton.setLayoutParams(lp);
-
-                    // Set padding for the image menu button
-                    if (json.has("image")) {
-                        int padding = (int) JasonHelper.pixels(this, "15", "vertical");
-                        itemView.setPadding(padding, padding, padding, padding);
-                    }
-
-                    if (json.has("badge")) {
-                        String badge_text = "";
-                        JSONObject badge = json.getJSONObject("badge");
-                        if(badge.has("text")) {
-                            badge_text = badge.get("text").toString();
-                        }
-                        JSONObject badge_style;
-                        if (badge.has("style")) {
-                            badge_style = badge.getJSONObject("style");
-                        } else {
-                            badge_style = new JSONObject();
-                        }
-
-                        int color = JasonHelper.parse_color("#ffffff");
-                        int background = JasonHelper.parse_color("#ff0000");
-
-                        if(badge_style.has("color")) color = JasonHelper.parse_color(badge_style.getString("color"));
-                        if(badge_style.has("background")) background = JasonHelper.parse_color(badge_style.getString("background"));
-
-                        MaterialBadgeTextView v = new MaterialBadgeTextView(this);
-                        v.setBackgroundColor(background);
-                        v.setTextColor(color);
-                        v.setText(badge_text);
-
-                        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-                        //layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
-                        int left = (int)JasonHelper.pixels(this, String.valueOf(30), "horizontal");
-                        int top = (int)JasonHelper.pixels(this, String.valueOf(-3), "vertical");
-                        if (badge_style.has("left")) {
-                            left = (int)JasonHelper.pixels(this, badge_style.getString("left"), "horizontal");
-                        }
-                        if (badge_style.has("top")) {
-                            top = (int)JasonHelper.pixels(this, String.valueOf(parseInt(badge_style.getString("top"))), "vertical");
-                        }
-                        layoutParams.setMargins(left,top,0,0);
-                        itemView.addView(v);
-                        v.setLayoutParams(layoutParams);
-                        itemView.setClipChildren(false);
-                        itemView.setClipToPadding(false);
-                    }
-
-                    item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem menuItem) {
+                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
+                    @Override
+                    public boolean onQueryTextSubmit(String s) {
+                        // name
+                        if (search.has("name")) {
                             try {
-                                JSONObject header = model.rendered.getJSONObject("header");
-                                if (header.has("menu")) {
-                                    if (header.getJSONObject("menu").has("action")) {
-                                        call(header.getJSONObject("menu").getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    } else if (header.getJSONObject("menu").has("href")) {
-                                        JSONObject action = new JSONObject().put("type", "$href").put("options", header.getJSONObject("menu").getJSONObject("href"));
-                                        call(action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    }
+                                JSONObject kv = new JSONObject();
+                                kv.put(search.getString("name"), s);
+                                model.var = JasonHelper.merge(model.var, kv);
+                                if (search.has("action")) {
+                                    call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
                                 }
-                            } catch (Exception e) {
+                            } catch (Exception e){
                                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                             }
-                            return true;
                         }
-                    });
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onQueryTextChange(String s) {
+                        if (search.has("action")) {
+                            return false;
+                        } else if (listView != null) {
+                            ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
+                            adapter.filter(s);
+                        }
+                        return true;
+                    }
+                });
+            }
+
+
+            if (header.has("menu")) {
+                JSONObject json = header.getJSONObject("menu");
+
+                final MenuItem item = menu.add("Menu");
+                item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
+                // We're going to create a button.
+                json.put("type", "button");
+
+                // if it's an image button, both url and image should work
+                if (json.has("image")) {
+                    json.put("url", json.getString("image"));
                 }
+
+                // let's override the style so the menu button size has a sane dimension
+                JSONObject style;
+                if (json.has("style")) {
+                    style = json.getJSONObject("style");
+                } else {
+                    style = new JSONObject();
+                }
+
+                // For image, limit the height so it doesn't look too big
+                if (json.has("url")) {
+                    style.put("height", JasonHelper.pixels(this, "8", "vertical"));
+                }
+
+                json.put("style", style);
+
+                // Now creating the menuButton and itemview
+                FrameLayout itemView;
+                View menuButton;
+                if (item.getActionView() == null) {
+                    // Create itemView if it doesn't exist yet
+                    itemView = new FrameLayout(this);
+                    menuButton = JasonComponentFactory.build(null, json, null, JasonViewActivity.this);
+                    JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
+                    itemView.addView(menuButton);
+                    item.setActionView(itemView);
+                } else {
+                    // Reuse the itemView if it already exists
+                    itemView = (FrameLayout) item.getActionView();
+                    menuButton = itemView.getChildAt(0);
+                    JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
+                }
+
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                menuButton.setLayoutParams(lp);
+
+                // Set padding for the image menu button
+                if (json.has("image")) {
+                    int padding = (int) JasonHelper.pixels(this, "15", "vertical");
+                    itemView.setPadding(padding, padding, padding, padding);
+                }
+
+                if (json.has("badge")) {
+                    String badge_text = "";
+                    JSONObject badge = json.getJSONObject("badge");
+                    if(badge.has("text")) {
+                        badge_text = badge.get("text").toString();
+                    }
+                    JSONObject badge_style;
+                    if (badge.has("style")) {
+                        badge_style = badge.getJSONObject("style");
+                    } else {
+                        badge_style = new JSONObject();
+                    }
+
+                    int color = JasonHelper.parse_color("#ffffff");
+                    int background = JasonHelper.parse_color("#ff0000");
+
+                    if(badge_style.has("color")) color = JasonHelper.parse_color(badge_style.getString("color"));
+                    if(badge_style.has("background")) background = JasonHelper.parse_color(badge_style.getString("background"));
+
+                    MaterialBadgeTextView v = new MaterialBadgeTextView(this);
+                    v.setBackgroundColor(background);
+                    v.setTextColor(color);
+                    v.setText(badge_text);
+
+                    FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+                    //layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
+                    int left = (int)JasonHelper.pixels(this, String.valueOf(30), "horizontal");
+                    int top = (int)JasonHelper.pixels(this, String.valueOf(-3), "vertical");
+                    if (badge_style.has("left")) {
+                        left = (int)JasonHelper.pixels(this, badge_style.getString("left"), "horizontal");
+                    }
+                    if (badge_style.has("top")) {
+                        top = (int)JasonHelper.pixels(this, String.valueOf(parseInt(badge_style.getString("top"))), "vertical");
+                    }
+                    layoutParams.setMargins(left,top,0,0);
+                    itemView.addView(v);
+                    v.setLayoutParams(layoutParams);
+                    itemView.setClipChildren(false);
+                    itemView.setClipToPadding(false);
+                }
+
+                item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        try {
+                            JSONObject header = model.rendered.getJSONObject("header");
+                            if (header.has("menu")) {
+                                if (header.getJSONObject("menu").has("action")) {
+                                    call(header.getJSONObject("menu").getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                                } else if (header.getJSONObject("menu").has("href")) {
+                                    JSONObject action = new JSONObject().put("type", "$href").put("options", header.getJSONObject("menu").getJSONObject("href"));
+                                    call(action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                        }
+                        return true;
+                    }
+                });
             }
         }catch(Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
