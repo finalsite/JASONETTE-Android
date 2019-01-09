@@ -25,6 +25,7 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -80,7 +81,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     private int header_height;
     private ImageView logoView;
-    private HashMap<Integer, AHBottomNavigationItem> bottomNavigationItems;
+    private SparseArray<AHBottomNavigationItem> bottomNavigationItems;
     public HashMap<String, Object> modules;
     public JasonVisionService cameraManager;
     private AHBottomNavigation bottomNavigation;
@@ -1203,8 +1204,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     bottomNavigation.setBackgroundColor(background);
                 }
             }
-
+            boolean sameNavigationItems = true;
             if (bottomNavigation.getItemsCount() == items.length()) {
+                for (int i = 0; i < items.length(); i++) {
+                    if (((JSONObject) items.get(i)).getString("text") != bottomNavigation.getItem(i).getTitle(this)) {
+                        sameNavigationItems = false;
+                    }
+                }
+            } else {
+                sameNavigationItems = false;
+            }
+
+            if (sameNavigationItems) {
                 // if the same number as the previous state, try to fill in the items instead of re-instantiating them all
 
                 for (int i = 0; i < items.length(); i++) {
@@ -1261,62 +1272,17 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     }
                 }
             } else {
-                bottomNavigationItems = new HashMap<Integer, AHBottomNavigationItem>();
+                // The navigation didn't match so we want to remove items before continuing to draw the new ones
+                bottomNavigation.removeAllItems();
+                bottomNavigationItems = new SparseArray<AHBottomNavigationItem>(5);
+
                 for (int i = 0; i < items.length(); i++) {
                     final JSONObject item = items.getJSONObject(i);
                     final int index = i;
-                    if (item.has("image")) {
-                        JSONObject c = new JSONObject();
-                        c.put("url", item.getString("image"));
-                        with(this)
-                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
-                                .asBitmap()
-                                .into(new SimpleTarget<Bitmap>(100, 100) {
-                                    @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
-                                        String text = "";
-                                        try {
-                                            if (item.has("text")) {
-                                                text = item.getString("text");
-                                                bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
-                                            }
-                                        } catch (Exception e) {
-                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                        }
-                                        Drawable drawable = new BitmapDrawable(getResources(), resource);
-                                        AHBottomNavigationItem item = new AHBottomNavigationItem(text, drawable);
-                                        bottomNavigationItems.put(Integer.valueOf(index), item);
-                                        if(bottomNavigationItems.size() >= items.length()){
-                                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                                            }
-                                        }
-                                    }
-                                    @Override
-                                    public void onLoadFailed(Exception exception, Drawable errorDrawable) {
-                                        String text = "";
-                                        try {
-                                            if (item.has("text")) {
-                                                text = item.getString("text");
-                                                bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
-                                            }
-                                        } catch (Exception e) {
-                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                        }
-
-                                        ColorDrawable d = new ColorDrawable(Color.TRANSPARENT);
-                                        AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text,d);
-                                        bottomNavigationItems.put(Integer.valueOf(index), tab_item);
-                                        if(bottomNavigationItems.size() >= items.length()){
-                                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                                            }
-                                        }
-                                    }
-                                });
-
-                    } else if (item.has("text")) {
-                        String text = "";
+                    String text = "";
+                    ColorDrawable blank_image = new ColorDrawable(Color.TRANSPARENT);
+                    final AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text, blank_image);
+                    if (item.has("text")) {
                         try {
                             if (item.has("text")) {
                                 text = item.getString("text");
@@ -1326,24 +1292,41 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
 
-                        ColorDrawable d = new ColorDrawable(Color.TRANSPARENT);
-                        AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text,d);
-                        bottomNavigationItems.put(Integer.valueOf(index), tab_item);
-                        if (bottomNavigationItems.size() >= items.length()) {
-                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                            }
+                        tab_item.setTitle(text);
+                    }
+                    if (item.has("image")) {
+                        JSONObject c = new JSONObject();
+                        c.put("url", item.getString("image"));
+                        with(this)
+                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
+                                .asBitmap()
+                                .into(new SimpleTarget<Bitmap>(100, 100) {
+                                    @Override
+                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
+                                        Drawable drawable = new BitmapDrawable(getResources(), resource);
+                                        tab_item.setDrawable(drawable);
+                                        // Tell the bottomNavigation to update the visuals if they're different
+                                        bottomNavigation.refresh();
+                                    }
+                                });
+
+                    }
+                    bottomNavigationItems.put(Integer.valueOf(index), tab_item);
+                    if (bottomNavigationItems.size() >= items.length()) {
+                        for (int j = 0; j < bottomNavigationItems.size(); j++) {
+                            bottomNavigation.addItem(bottomNavigationItems.get(j));
                         }
                     }
                 }
-
             }
+
             for (int i = 0; i < items.length(); i++) {
                 final JSONObject item = items.getJSONObject(i);
                 if (item.has("badge")) {
                     bottomNavigation.setNotification(item.get("badge").toString(), i);
                 }
             }
+
             bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
                 @Override
                 public boolean onTabSelected(int position, boolean wasSelected) {

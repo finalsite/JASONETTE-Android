@@ -1332,6 +1332,13 @@ public class JasonFragment extends Fragment {
             }
 
             JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
+
+            try {
+                // If the request returned "head_styles" we want to update the model to be able to use them for rendering.
+                JSONObject template_styles = data.getJSONObject("$get").getJSONObject("head_styles");
+                model.jason.getJSONObject("$jason").getJSONObject("head").put("styles", template_styles);
+            } catch (JSONException e) {}
+
             JSONObject templates = head.getJSONObject("templates");
 
             JSONObject template = templates.getJSONObject(template_name);
@@ -1497,7 +1504,7 @@ public class JasonFragment extends Fragment {
     public void build(JSONObject jason){
         // set fetched to true since build() is only called after network.request succeeds
         fetched = true;
-        if(jason!=null) {
+        if(jason != null) {
             try {
 
                 if (jason.getJSONObject("$jason").has("body")) {
@@ -1548,7 +1555,9 @@ public class JasonFragment extends Fragment {
                     It was noted that this onLoad was breaking initial scroll. (APP-25)
                     but it seems to once again be required with the fragment changes (APP-42)
                 **/
-                 onLoad();
+                if (!loaded) {
+                    onLoad();
+                }
 
             } catch (JSONException e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
