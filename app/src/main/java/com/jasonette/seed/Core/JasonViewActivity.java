@@ -144,9 +144,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if (fragmentManager.getBackStackEntryCount() == 1) {
             finish();
+        } else {
+            super.onBackPressed();
+            // Because the view activity still has a fragment we should call onResume on it
+            currentFragment().onResume();
         }
     }
 
@@ -167,14 +171,10 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     @Override
     public boolean onSupportNavigateUp() {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        // call immediate pop so that we can grab the proper currentFragment below for calling onResume
+        // Call immediate pop so that we can grab the proper currentFragment below for calling onResume
         fragmentManager.popBackStackImmediate();
-        if (fragmentManager.getBackStackEntryCount() == 0) {
-            finish();
-        } else {
-            // If the view activity still has a fragment we should call onResume on it
-            currentFragment().onResume();
-        }
+        // Because the view activity will still have a fragment we should call onResume on it
+        currentFragment().onResume();
         return true;
     }
 
