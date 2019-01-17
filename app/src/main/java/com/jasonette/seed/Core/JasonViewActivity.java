@@ -1,7 +1,6 @@
 package com.jasonette.seed.Core;
 
 import android.app.SearchManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,9 +8,11 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -1042,20 +1043,41 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     }
 
     public void setup_header(@Nullable JSONObject header){
-        if (header != null) {
-            try{
-                String backgroundColor = header.getJSONObject("style").getString("background");
-                toolbar.setBackgroundColor(JasonHelper.parse_color(backgroundColor));
+        if (header != null && header.has("style")) {
+            try {
+                JSONObject style = header.getJSONObject("style");
+
+                if (style.has("background")) {
+                    String backgroundColor = style.getString("background");
+                    toolbar.setBackgroundColor(JasonHelper.parse_color(backgroundColor));
+                }
+
+                if (style.has("gradient_background")) {
+                    JSONArray backgroundGradient = style.getJSONArray("gradient_background");
+
+                    GradientDrawable gd = new GradientDrawable(
+                            GradientDrawable.Orientation.BL_TR,
+                            new int[]{
+                                    JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(0)),
+                                    JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(1)),
+                            });
+                    toolbar.setBackground(gd);
+                }
+
+                if (style.has("color")) {
+                    int color = JasonHelper.parse_color(style.getString("color"));
+                    toolbar.setTitleTextColor(color);
+                    toolbar.setSubtitleTextColor(color);
+
+                    final Drawable upArrow = getResources().getDrawable(R.drawable.abc_ic_ab_back_material);
+                    upArrow.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+                    getSupportActionBar().setHomeAsUpIndicator(upArrow);
+                }
+
             } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+              Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
 
-            try{
-                String color = header.getJSONObject("style").getString("color");
-                toolbar.setTitleTextColor(JasonHelper.parse_color(color));
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
             toolbar.setVisibility(View.VISIBLE);
         } else {
             toolbar.setVisibility(View.GONE);
