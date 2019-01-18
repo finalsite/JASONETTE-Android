@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Finalsite</string>
-    <!--<string name="url">https://5aa504e4.ngrok.io/fs/mobile-manager/apps/6/home.json</string>-->
-    <string name="url">file://home.json</string>
+    <string name="url">file://splash_screen.json</string>
     <string name="launch">file://preload.json</string>
 </resources>
