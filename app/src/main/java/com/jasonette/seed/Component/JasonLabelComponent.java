@@ -2,6 +2,7 @@ package com.jasonette.seed.Component;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -55,6 +56,12 @@ public class JasonLabelComponent {
                 }
 
                 ((TextView)view).setGravity(g);
+
+                if (component.has("line_limit")) {
+                    ((TextView) view).setSingleLine(false);
+                    ((TextView) view).setEllipsize(TextUtils.TruncateAt.END);
+                    ((TextView) view).setLines(component.getInt("line_limit"));
+                }
 
 
                 if (style.has("size")) {
