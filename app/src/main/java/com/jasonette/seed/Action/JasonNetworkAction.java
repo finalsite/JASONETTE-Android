@@ -61,7 +61,7 @@ public class JasonNetworkAction {
                     while (keys.hasNext()) {
                         String key = (String) keys.next();
                         String val = session.getJSONObject("header").getString(key);
-                        builder.addHeader(key, val);
+                        builder.header(key, val);
                     }
                 }
 
@@ -73,7 +73,7 @@ public class JasonNetworkAction {
                         while (keys.hasNext()) {
                             String key = (String) keys.next();
                             String val = header.getString(key);
-                            builder.addHeader(key, val);
+                            builder.header(key, val);
                         }
                     } catch (Exception e) {
 
