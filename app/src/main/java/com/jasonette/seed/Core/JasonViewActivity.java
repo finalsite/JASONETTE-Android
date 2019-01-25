@@ -145,9 +145,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if (fragmentManager.getBackStackEntryCount() == 1) {
             finish();
+        } else {
+            super.onBackPressed();
+            // Because the view activity still has a fragment we should call onResume on it
+            currentFragment().onResume();
         }
     }
 
@@ -168,14 +172,10 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     @Override
     public boolean onSupportNavigateUp() {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        // call immediate pop so that we can grab the proper currentFragment below for calling onResume
+        // Call immediate pop so that we can grab the proper currentFragment below for calling onResume
         fragmentManager.popBackStackImmediate();
-        if (fragmentManager.getBackStackEntryCount() == 0) {
-            finish();
-        } else {
-            // If the view activity still has a fragment we should call onResume on it
-            currentFragment().onResume();
-        }
+        // Because the view activity will still have a fragment we should call onResume on it
+        currentFragment().onResume();
         return true;
     }
 
@@ -804,6 +804,12 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
     }
 
+    public void handleErrorCallback() {
+        if (model.onError != null) {
+            exec(model.onError, model.state, null, this);
+        }
+    }
+
     public void href(final JSONObject action, JSONObject data, JSONObject event, Context context) {
         try {
             if (action.has("options")) {
@@ -852,8 +858,12 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     }
                     Intent intent = new Intent(this, JasonViewActivity.class);
                     intent.putExtra("transition", transition);
-
                     intent.putExtra("depth", depth);
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
+                    }
+
                     if (params!=null) {
                         intent.putExtra("params", params);
                         onSwitchTab(url, params, intent);
@@ -868,27 +878,38 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                     Intent intent = new Intent(this, JasonViewActivity.class);
                     intent.putExtra("transition", transition);
-                    if (params!=null) {
-                        intent.putExtra("params", params);
-                    }
-                    intent.putExtra("depth", depth);
                     intent.putExtra("url", url);
+                    intent.putExtra("depth", depth);
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
+                    }
+
                     if (action_options.has("preload")) {
                         intent.putExtra("preload", action_options.getJSONObject("preload").toString());
                     }
-                    dispatchFragment(intent, true);
 
+                    if (params!=null) {
+                        intent.putExtra("params", params);
+                    }
+                    dispatchFragment(intent, true);
                 } else {
                     Intent intent = new Intent(this, JasonViewActivity.class);
                     intent.putExtra("transition", transition);
                     intent.putExtra("url", url);
-                    if (params != null) {
-                        intent.putExtra("params", params);
+                    intent.putExtra("depth", depth+1);
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
                     }
+
                     if (action_options.has("preload")) {
                         intent.putExtra("preload", action_options.getJSONObject("preload").toString());
                     }
-                    intent.putExtra("depth", depth+1);
+
+                    if (params != null) {
+                        intent.putExtra("params", params);
+                    }
 
                     // Start an Intent with a callback option:
                     // 1. call dispatchIntent
@@ -1208,6 +1229,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             if (bottomNavigation == null) {
                 bottomNavigation = this.findViewById(R.id.jason_bottom_navigation);
                 bottomNavigation.setDefaultBackgroundColor(Color.parseColor("#FEFEFE"));
+
             }
 
             if (tabs.has("style")) {

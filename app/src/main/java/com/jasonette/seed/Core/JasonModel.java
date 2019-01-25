@@ -8,6 +8,7 @@ import android.util.Log;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Launcher.Launcher;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ public class JasonModel{
     public JSONObject params;   // $params
     public JSONObject session;
     public JSONObject action;   // latest executed action
+    public JSONObject onError;  // error callback for current action
 
     public OkHttpClient client;
 
@@ -52,6 +54,11 @@ public class JasonModel{
         this.view = view;
         this.client = ((Launcher)view.getApplication()).getHttpClient(0);
         this.offline = false;
+        if (intent.hasExtra("onError")) {
+            try {
+                this.onError = new JSONObject(intent.getStringExtra("onError"));
+            } catch (JSONException e) { }
+        }
 
         // $params
         this.params = new JSONObject();
@@ -132,9 +139,10 @@ public class JasonModel{
 
     private void fetch_http(String url){
         try{
+            final JasonModel self = this;
+
             Request request;
             Request.Builder builder = new Request.Builder();
-
             // SESSION HANDLING
 
             // Attach Header from Session
@@ -167,14 +175,26 @@ public class JasonModel{
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    if(!offline) fetch_local("file://error.json");
+                    if(!offline) {
+                        if (self.onError != null) {
+                            self.view.handleErrorCallback();;
+                        } else {
+                            fetch_local("file://error.json");
+                        }
+                    }
                     e.printStackTrace();
                 }
 
                 @Override
                 public void onResponse(Call call, final Response response) throws IOException {
                     if (!response.isSuccessful()) {
-                        if(!offline) fetch_local("file://error.json");
+                        if(!offline) {
+                            if (self.onError != null) {
+                                self.view.handleErrorCallback();
+                            } else {
+                                fetch_local("file://error.json");
+                            }
+                        }
                     } else {
                         String res = response.body().string();
                         refs = new JSONObject();

@@ -349,13 +349,14 @@ public class JasonFragment extends Fragment {
                 else {
                     model.rendered = model.jason.getJSONObject("$jason").getJSONObject("body");
                 }
-                model.offline = true;   // we confirm that this model is offline so it shouldn't trigger error.json when network fails
+                model.offline = true; // we confirm that this model is offline so it shouldn't trigger error.json when network fails
                 setup_body(model.rendered);
             } catch (Exception e) {
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
         } else if (preload != null) {
             setup_body(preload);
+            preload = null;
         }
 
         // Fetch
@@ -471,12 +472,14 @@ public class JasonFragment extends Fragment {
 
         if (!firstResume) {
             onShow();
+            JasonViewActivity currentView = (JasonViewActivity) context;
+            // update the view to be using the model for this fragment
+            currentView.setModel(model);
+            // tell the view to setup it's header/options menu
             if (model.rendered != null && model.rendered.has("header")) {
-                JasonViewActivity currentView = (JasonViewActivity) context;
-                // update the view to be using the model for this fragment
-                currentView.setModel(model);
-                // tell the view to setup it's header/options menu
                 currentView.onPrepareOptionsMenu(null);
+            } else {
+                currentView.setup_header(null);
             }
         }
         firstResume = false;
@@ -1976,7 +1979,7 @@ public class JasonFragment extends Fragment {
                 layer_items = new ArrayList<View>();
             }
             if (layers != null) {
-                for(int i = 0; i<layers.length(); i++){
+                for(int i = 0; i < layers.length(); i++){
                     JSONObject layer = layers.getJSONObject(i);
                     if(layer.has("type")){
                         View view = JasonComponentFactory.build(null, layer, null, context);
