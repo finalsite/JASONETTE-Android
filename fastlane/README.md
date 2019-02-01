@@ -25,7 +25,7 @@ Create APK/AAB files and generate screenshots
 ```
 fastlane android deploy
 ```
-Deploy a new version to the Google Play Store
+Deploy a new version to the Google Play Store, deploys to beta environment by default, adding the production flag will allow production deployment
 
 ----
 
