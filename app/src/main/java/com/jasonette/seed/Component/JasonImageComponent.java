@@ -148,10 +148,9 @@ public class JasonImageComponent {
         }
 
     }
-    private static void tinted(JSONObject component, View view, final Context context){
+    private static void tinted(JSONObject component, final JSONObject style, View view, final Context context){
         try {
             Object new_url = JasonImageComponent.resolve_url(component, context);
-            final JSONObject style = component.getJSONObject("style");
             Glide
                 .with(context)
                 .load(new_url)
@@ -209,7 +208,7 @@ public class JasonImageComponent {
                                     JasonImageComponent.gif(component, view, context);
                                 } else {
                                     if(style.has("color")){
-                                        JasonImageComponent.tinted(component, view, context);
+                                        JasonImageComponent.tinted(component, style, view, context);
                                     } else {
                                         JasonImageComponent.normal(component, view, context);
                                     }
@@ -237,7 +236,7 @@ public class JasonImageComponent {
                                     JasonImageComponent.gif(component, view, context);
                                 } else {
                                     if(style.has("color")){
-                                        JasonImageComponent.tinted(component, view, context);
+                                        JasonImageComponent.tinted(component, style, view, context);
                                     } else {
                                         JasonImageComponent.normal(component, view, context);
                                     }
