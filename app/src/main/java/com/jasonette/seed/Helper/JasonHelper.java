@@ -9,8 +9,10 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.jasonette.seed.Core.JasonFragment;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Launcher.Launcher;
 
@@ -171,19 +173,16 @@ public class JasonHelper {
             String sign = m.group(2);
             Float pixels = Float.parseFloat(m.group(3));
             pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, pixels, context.getResources().getDisplayMetrics());
-
-            DisplayMetrics displayMetrics = new DisplayMetrics();
-            WindowManager windowmanager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-            windowmanager.getDefaultDisplay().getMetrics(displayMetrics);
+            FrameLayout full_view = ((JasonViewActivity) context).getFragmentContainer();
             float percent_height;
             float percent_width;
             float s;
             if (direction.equalsIgnoreCase("vertical")) {
-                int full = displayMetrics.heightPixels;
+                int full = full_view.getHeight();
                 percent_height = full * percentage / 100;
                 s = percent_height;
             } else {
-                int full = displayMetrics.widthPixels;
+                int full = full_view.getWidth();
                 percent_width = full * percentage / 100;
                 s = percent_width;
             }
@@ -203,14 +202,12 @@ public class JasonHelper {
             float s;
             if (m.matches()) {
                 Float percentage = Float.parseFloat(m.group(1));
-                DisplayMetrics displayMetrics = new DisplayMetrics();
-                WindowManager windowmanager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-                windowmanager.getDefaultDisplay().getMetrics(displayMetrics);
+                FrameLayout full_view = ((JasonViewActivity) context).getFragmentContainer();
                 if (direction.equalsIgnoreCase("vertical")) {
-                    int full = displayMetrics.heightPixels;
+                    int full = full_view.getHeight();
                     s = full * percentage / 100;
                 } else {
-                    int full = displayMetrics.widthPixels;
+                    int full = full_view.getWidth();
                     s = full * percentage / 100;
                 }
                 return s;

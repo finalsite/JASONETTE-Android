@@ -193,13 +193,15 @@ public class JasonImageComponent {
             int height = 0;
             float corner_radius = 0;
             try {
-                String type;
+                String type = component.getString("type");;
                 final JSONObject style = JasonHelper.style(component, context);
+                // If we're dealing with an image button we don't want the image to know about the button's corner_radius
+                if (type.equalsIgnoreCase("button")) {
+                    style.remove("corner_radius");
+                }
                 if (style.has("corner_radius")) {
                     corner_radius = JasonHelper.pixels(context, style.getString("corner_radius"), "horizontal");
                 }
-                type = component.getString("type");
-
                 if (component.has("url")) {
                     if(component.getString("url").contains("file://")){
                         if (corner_radius == 0) {
