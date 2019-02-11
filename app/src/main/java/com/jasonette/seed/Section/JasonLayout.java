@@ -61,14 +61,7 @@ public class JasonLayout {
                         }
                     } catch (Exception e) { }
                 } else {
-                    if(item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space")){
-                        // layouts should have flexible height inside a vertical layout
-                        height = 0;
-                        weight = 1;
-                    } else {
-                        // components should stay as their intrinsic size
-                        height = LinearLayout.LayoutParams.WRAP_CONTENT;
-                    }
+                    height = LinearLayout.LayoutParams.WRAP_CONTENT;
                 }
 
                 if (style.has("width")) {
@@ -99,10 +92,15 @@ public class JasonLayout {
                     } catch (Exception e) {
                     }
                 } else {
-                    // in a horizontal layout, the child components shouldn't fight with width.
-                    // All must be flexible width unless otherwise specified.
-                    width = 0;
-                    weight = 1;
+                    // allow styling to override how the element width is treated / opt out of weighted width
+                    if (style.has("android_wrap_content") && style.getBoolean("android_wrap_content")) {
+                        width = LinearLayout.LayoutParams.WRAP_CONTENT;
+                    } else {
+                        // in a horizontal layout, the child components shouldn't fight with width.
+                        // All must be flexible width unless otherwise specified.
+                        width = 0;
+                        weight = 1;
+                    }
                 }
                 if (style.has("height")) {
                     try {

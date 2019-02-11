@@ -32,7 +32,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
@@ -44,6 +43,7 @@ import com.jasonette.seed.Launcher.Launcher;
 import com.jasonette.seed.Service.agent.JasonAgentService;
 import com.jasonette.seed.Service.vision.JasonVisionService;
 import com.jasonette.seed.R;
+
 import com.jasonette.seed.Section.ItemAdapter;
 import com.yqritc.recyclerviewflexibledivider.HorizontalDividerItemDecoration;
 
