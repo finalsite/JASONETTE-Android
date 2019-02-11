@@ -14,6 +14,7 @@ public class JasonLayout {
 
         try {
             JSONObject style = JasonHelper.style(item, root_context);
+            JSONObject parent_style = JasonHelper.style(parent, root_context);
 
             String item_type = item.getString("type");
 
@@ -61,7 +62,14 @@ public class JasonLayout {
                         }
                     } catch (Exception e) { }
                 } else {
-                    height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                    if(parent_style.has("height") && (item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space"))){
+                        // layouts should have flexible height inside a vertical layout (that has a specific height defined)
+                        height = 0;
+                        weight = 1;
+                    } else {
+                        // components should stay as their intrinsic size
+                        height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                    }
                 }
 
                 if (style.has("width")) {
