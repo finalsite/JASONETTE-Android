@@ -7,32 +7,60 @@ android {
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 3
-        versionName "0.1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        multiDexEnabled true
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    bundle {
+        language {
+            enableSplit false
+        }
+    }
+
+    def isAutoSigning = new File("../config/keys/keystore.properties").exists()
+
+    if (isAutoSigning) {
+        Properties props = new Properties()
+        props.load(new FileInputStream(file("../../config/keys/keystore.properties")))
+
+        signingConfigs {
+            release {
+                storeFile file(props['RELEASE_STORE_FILE'])
+                storePassword props['RELEASE_STORE_PASSWORD']
+                keyAlias props['RELEASE_STORE_KEY_ALIAS']
+                keyPassword props['RELEASE_STORE_KEY_PASSWORD']
+            }
+        }
     }
     buildTypes {
         release {
             debuggable false
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     lintOptions {
         disable "ResourceType"
     }
+    // Gradle automatically adds 'android.test.runner' as a dependency.
+    useLibrary 'android.test.runner'
+    useLibrary 'android.test.base'
+    useLibrary 'android.test.mock'
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-
+    androidTestImplementation 'tools.fastlane:screengrab:1.2.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
+    androidTestImplementation 'androidx.test:rules:1.1.1'
     // UrbanAirship
-    implementation 'com.urbanairship.android:urbanairship-fcm:9.5.1'
-    implementation 'com.google.firebase:firebase-core:15.0.0'
-    implementation 'com.google.android.gms:play-services-basement:15.0.1'
+    implementation 'com.urbanairship.android:urbanairship-fcm:9.6.0'
+    implementation 'com.google.firebase:firebase-core:16.0.6'
+    implementation 'com.google.android.gms:play-services-basement:16.2.0'
     implementation 'com.firebaseui:firebase-ui-auth:4.0.0'
 
     debugImplementation 'com.facebook.stetho:stetho:1.5.0'

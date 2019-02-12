@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearSmoothScroller;
@@ -63,8 +64,6 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.annotation.Nullable;
 
 import static com.bumptech.glide.Glide.with;
 import static java.lang.Integer.parseInt;
@@ -1064,7 +1063,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         currentFragment().build(jason);
     }
 
-    public void setup_header(@Nullable JSONObject header){
+    public void setup_header(JSONObject header){
         if (header != null && header.has("style")) {
             try {
                 JSONObject style = header.getJSONObject("style");
@@ -1091,7 +1090,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     toolbar.setTitleTextColor(color);
                     toolbar.setSubtitleTextColor(color);
 
-                    final Drawable upArrow = getResources().getDrawable(R.drawable.abc_ic_ab_back_material);
+                    final Drawable upArrow = ContextCompat.getDrawable(this, R.drawable.abc_ic_ab_back_material);
                     upArrow.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
                     getSupportActionBar().setHomeAsUpIndicator(upArrow);
                 }
