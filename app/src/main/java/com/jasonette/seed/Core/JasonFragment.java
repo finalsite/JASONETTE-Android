@@ -1923,7 +1923,7 @@ public class JasonFragment extends Fragment {
                         // horizontal type
                         // TEMPORARY: Add header as an item
                         if (section.has("header")) {
-                            JSONObject header = (JSONObject) section.getJSONObject("header");
+                            JSONObject header = section.getJSONObject("header");
                             header.put("isHeader", true);
                             section_items.add(header);
                         }
@@ -1937,14 +1937,14 @@ public class JasonFragment extends Fragment {
                     } else {
                         // vertical type (default)
                         if (section.has("header")) {
-                            JSONObject header = (JSONObject) section.getJSONObject("header");
+                            JSONObject header = section.getJSONObject("header");
                             header.put("isHeader", true);
                             section_items.add(header);
                         }
                         if (section.has("items")) {
-                            JSONArray items = (JSONArray) section.getJSONArray("items");
+                            JSONArray items = section.getJSONArray("items");
                             for (int j = 0; j < items.length(); j++) {
-                                JSONObject item = (JSONObject) items.getJSONObject(j);
+                                JSONObject item = items.getJSONObject(j);
                                 section_items.add(item);
                             }
                         }

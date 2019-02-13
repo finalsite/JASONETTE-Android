@@ -45,10 +45,9 @@ public class JasonLayout {
                         }
                     } catch (Exception e) {
                     }
-                } else {
+                } else if (height == 0) {
                     height = LinearLayout.LayoutParams.WRAP_CONTENT;
                 }
-
 
             } else if (parent.getString("type").equalsIgnoreCase("vertical")) {
 
@@ -72,14 +71,12 @@ public class JasonLayout {
                             height = width / ratio;
                         }
                     } catch (Exception e) { }
-                } else {
+                } else if (width == 0) {
                     // in case of vertical layout, all its children, regardless of whether they are layout or components,
                     // should have the width match parent
                     // (Except for images, which will be handled inside JasonImageComponent)
                     width = LinearLayout.LayoutParams.MATCH_PARENT;
                 }
-
-
 
             } else if (parent.getString("type").equalsIgnoreCase("horizontal")) {
                 if (style.has("width")) {
@@ -111,7 +108,7 @@ public class JasonLayout {
                         }
                     } catch (Exception e) {
                     }
-                } else {
+                } else if (height == 0){
                     height = LinearLayout.LayoutParams.WRAP_CONTENT;
                 }
             }
