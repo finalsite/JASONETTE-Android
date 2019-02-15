@@ -138,6 +138,7 @@ public class JasonComponent {
                 }
                 cornerShape.invalidateSelf();
                 view.setBackground(cornerShape);
+                view.setClipToOutline(true);
             } else {
                 // border handling (no corner radius)
                 if (style.has("border_width")){
