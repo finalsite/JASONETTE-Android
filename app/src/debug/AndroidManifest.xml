@@ -33,7 +33,6 @@
         <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
             <!-- Uncomment below intent-filter to support custom url schemes -->

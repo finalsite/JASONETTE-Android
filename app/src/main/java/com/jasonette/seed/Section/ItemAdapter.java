@@ -54,7 +54,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     Boolean isHorizontalScroll = false;
     ImageView backgroundImageView;
 
-
     /********************************************************
      *
      * Root level RecyclerView/ViewHolder logic
@@ -299,6 +298,14 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         private Boolean exists;
         private int index;
 
+        private JSONObject chevron = new JSONObject() {{
+            try {
+                put("type", "image");
+                put("url", "file://chevron-right.png");
+                put("style", new JSONObject("{height: 20, width: 20}"));
+            } catch (JSONException e) { }
+        }};
+
         public ItemAdapter.ViewHolder build(ViewHolder prototype, JSONObject json) {
 
             LinearLayout layout;
@@ -431,7 +438,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }
 
         public LinearLayout buildLayout(LinearLayout layout, JSONObject item, JSONObject parent, int level) {
-
             if (exists) {
                 try {
                     JSONArray components = item.getJSONArray("components");
@@ -452,6 +458,10 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                 add_spacing(child_component, item, item.getString("type"));
                             }
                         }
+                    }
+                    // If we reach this conditional then we want to add the chevron image because it's a navigation section
+                    if (item.getString("type").equalsIgnoreCase("horizontal") && item.has("href")) {
+                        buildComponent(chevron, item);
                     }
                 } catch (JSONException e) {
 
@@ -480,7 +490,10 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         // horizontal layout
                         layout.setOrientation(LinearLayout.HORIZONTAL);
                         components = item.getJSONArray("components");
-
+                        // If we reach this conditional then we want to add the chevron image because it's a navigation section
+                        if (item.has("href")) {
+                            components.put(chevron);
+                        }
                     }
 
                     // set width and height
