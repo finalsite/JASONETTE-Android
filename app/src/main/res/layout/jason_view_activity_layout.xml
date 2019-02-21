@@ -15,13 +15,37 @@
         android:gravity="top"
         android:orientation="vertical"></LinearLayout>
 
-    <androidx.appcompat.widget.ContentFrameLayout
-        android:id="@+id/jason_fragment_container"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-    </androidx.appcompat.widget.ContentFrameLayout>
+        <androidx.appcompat.widget.ContentFrameLayout
+            android:id="@+id/jason_fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </androidx.appcompat.widget.ContentFrameLayout>
+
+        <androidx.appcompat.widget.ContentFrameLayout
+            android:id="@+id/jason_loading_fragment_container"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#99EFEFEF"
+            android:visibility="visible">
+
+            <ProgressBar
+                android:id="@+id/loading_spinner"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:indeterminateTintMode="src_atop"
+                android:indeterminateTint="@color/colorPrimaryDark"
+                android:layout_gravity="center" />
+        </androidx.appcompat.widget.ContentFrameLayout>
+
+    </RelativeLayout>
 
     <com.aurelhubert.ahbottomnavigation.AHBottomNavigation
         android:id="@+id/jason_bottom_navigation"

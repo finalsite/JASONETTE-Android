@@ -226,8 +226,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     @Override
     public void onBindViewHolder(ItemAdapter.ViewHolder viewHolder, int position) {
         JSONObject json = this.items.get(position);
-
-        if(position == this.items.size() - Integer.min(this.items.size()/5, 20)) {
+        if(position == this.items.size() - Math.min(this.items.size()/5, 20)) {
             ((JasonViewActivity)root_context).simple_trigger("$scroll.end", new JSONObject(), this.context);
         }
 

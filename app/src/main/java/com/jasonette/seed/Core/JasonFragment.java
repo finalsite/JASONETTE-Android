@@ -143,6 +143,9 @@ public class JasonFragment extends Fragment {
         if(rootLayout == null) {
             // Create the root layout
             rootLayout = new RelativeLayout(context);
+            // If we don't set it to clickable then clicks will bubble up to all fragments in the stack until it finds a button
+            // meaning that we can click on white space where a covered fragment has a button and it will then act on that button...
+            rootLayout.setClickable(true);
             rootLayout.setLayoutParams(rlp);
             rootLayout.setFitsSystemWindows(true);
         }

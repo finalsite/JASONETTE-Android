@@ -140,6 +140,7 @@ public class JasonModel{
     private void fetch_http(String url){
         try{
             final JasonModel self = this;
+            self.view.showProgressBar();
 
             Request request;
             Request.Builder builder = new Request.Builder();
@@ -182,6 +183,7 @@ public class JasonModel{
                             fetch_local("file://error.json");
                         }
                     }
+                    self.view.hideProgressBar();
                     e.printStackTrace();
                 }
 
@@ -200,6 +202,7 @@ public class JasonModel{
                         refs = new JSONObject();
                         resolve_and_build(res);
                     }
+                    self.view.hideProgressBar();
                 }
             });
         } catch (Exception e){
