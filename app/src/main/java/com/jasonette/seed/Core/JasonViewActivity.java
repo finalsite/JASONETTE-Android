@@ -809,6 +809,26 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
     }
 
+    public void hideProgressBar() {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                findViewById(R.id.jason_loading_fragment_container).setVisibility(View.GONE);
+            }
+        });
+    }
+
+    public void showProgressBar() {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                findViewById(R.id.jason_loading_fragment_container).setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     public void href(final JSONObject action, JSONObject data, JSONObject event, Context context) {
         try {
             if (action.has("options")) {
