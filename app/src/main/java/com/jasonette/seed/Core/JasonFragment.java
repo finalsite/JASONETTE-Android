@@ -1934,7 +1934,7 @@ public class JasonFragment extends Fragment {
                             // Let's add the entire section as an item, under:
                             // "horizontal_section": [items]
                             JSONObject horizontal_section = new JSONObject();
-                            horizontal_section.put("horizontal_section", section.getJSONArray("items"));
+                            horizontal_section.put("horizontal_section", section);
                             section_items.add(horizontal_section);
                         }
                     } else {
