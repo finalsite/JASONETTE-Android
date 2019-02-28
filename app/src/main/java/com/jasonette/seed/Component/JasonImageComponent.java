@@ -17,9 +17,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Helper.JasonHelper;
 import org.json.JSONObject;
@@ -91,9 +90,9 @@ public class JasonImageComponent {
 
         Glide
             .with(context)
-            .load(new_url)
             .asGif()
-            .diskCacheStrategy(DiskCacheStrategy.SOURCE)
+            .load(new_url)
+            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
             .into((ImageView)view);
     }
     private static void rounded(JSONObject component, View view, final float corner_radius_float, final Context context){
@@ -101,8 +100,8 @@ public class JasonImageComponent {
         try {
             Glide
                 .with(context)
-                .load(new_url)
                 .asBitmap()
+                .load(new_url)
                 .fitCenter()
                 .into(new BitmapImageViewTarget((ImageView)view) {
                     @Override
@@ -134,9 +133,9 @@ public class JasonImageComponent {
             byte[] bs = Base64.decode(base64, Base64.NO_WRAP);
 
             Glide.with(context).load(bs)
-                    .into(new SimpleTarget<GlideDrawable>() {
+                    .into(new SimpleTarget<Drawable>() {
                 @Override
-                public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
                     ((ImageView)view).setImageDrawable(resource);
                 }
             });
@@ -153,8 +152,8 @@ public class JasonImageComponent {
             Object new_url = JasonImageComponent.resolve_url(component, context);
             Glide
                 .with(context)
-                .load(new_url)
                 .asBitmap()
+                .load(new_url)
                 .fitCenter()
                 .into(new BitmapImageViewTarget((ImageView)view) {
                     @Override

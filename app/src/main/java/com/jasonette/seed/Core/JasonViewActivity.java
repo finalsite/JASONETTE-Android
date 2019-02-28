@@ -39,7 +39,7 @@ import android.widget.RelativeLayout;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
@@ -1301,11 +1301,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         c.put("url", item.getString("image"));
                         Glide
                                 .with(this)
-                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .asBitmap()
+                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .into(new SimpleTarget<Bitmap>(100, 100) {
                                     @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
+                                    public void onResourceReady(Bitmap resource, Transition glideAnimation) {
                                         AHBottomNavigationItem tab_item = bottomNavigation.getItem(index);
                                         bottomNavigationItems.put(Integer.valueOf(index), tab_item);
                                         Drawable drawable = new BitmapDrawable(getResources(), resource);
@@ -1313,7 +1313,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                         tab_item.setTitle(text);
                                     }
                                     @Override
-                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                    public void onLoadFailed(Drawable errorDrawable) {
                                         AHBottomNavigationItem tab_item = bottomNavigation.getItem(index);
                                         bottomNavigationItems.put(Integer.valueOf(index), tab_item);
                                         tab_item.setTitle(text);
@@ -1361,11 +1361,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         JSONObject c = new JSONObject();
                         c.put("url", item.getString("image"));
                         with(this)
-                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .asBitmap()
+                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .into(new SimpleTarget<Bitmap>(100, 100) {
                                     @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
+                                    public void onResourceReady(Bitmap resource, Transition glideAnimation) {
                                         Drawable drawable = new BitmapDrawable(getResources(), resource);
                                         tab_item.setDrawable(drawable);
                                         // Tell the bottomNavigation to update the visuals if they're different
@@ -1731,7 +1731,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                 }
                             }
                         }
-
                         toolbar.setImageHeight(height);
                         toolbar.setImageWidth(width);
                         toolbar.setImage(c);

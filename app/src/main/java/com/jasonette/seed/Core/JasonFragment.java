@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -33,8 +34,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
@@ -1652,15 +1652,7 @@ public class JasonFragment extends Fragment {
 
                                     backgroundCurrentView = backgroundImageView;
 
-                                    // TODO: Switched this cache strategy to none because it was breaking home page background image loads. Should try updating to Glid V4
-                                    // And see if the automatic cache strategy fixes this bug.
-                                    DiskCacheStrategy cacheStrategy = DiskCacheStrategy.NONE;
-                                    // gif doesn't work with RESULT cache strategy
-                                    // TODO: Check with Glide V4
-                                    if (background.matches(".*\\.gif")) {
-                                        cacheStrategy = DiskCacheStrategy.SOURCE;
-                                    }
-
+                                    DiskCacheStrategy cacheStrategy = DiskCacheStrategy.AUTOMATIC;
                                     with(context)
                                             .load(JasonImageComponent.resolve_url(c, context))
                                             .diskCacheStrategy(cacheStrategy)
@@ -1679,9 +1671,9 @@ public class JasonFragment extends Fragment {
                                     }
                                     byte[] bs = Base64.decode(base64, Base64.NO_WRAP);
 
-                                    with(context).load(bs).into(new SimpleTarget<GlideDrawable>() {
+                                    with(context).load(bs).into(new SimpleTarget<Drawable>() {
                                         @Override
-                                        public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                                        public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
                                             sectionLayout.setBackground(resource);
                                         }
                                     });

@@ -89,23 +89,23 @@ public class JasonLayout {
             } else if (parent.getString("type").equalsIgnoreCase("horizontal")) {
                 if (style.has("width")) {
                     try {
-                        width = (int) JasonHelper.pixels(root_context, style.getString("width"), "horizontal");
-                        if (style.has("ratio")) {
-                            Float ratio = JasonHelper.ratio(style.getString("ratio"));
-                            height = width / ratio;
+                        // allow styling to override how the element width is treated / opt out of weighted width
+                        if (style.getString("width").equalsIgnoreCase("auto")) {
+                            width = LinearLayout.LayoutParams.WRAP_CONTENT;
+                        } else {
+                            width = (int) JasonHelper.pixels(root_context, style.getString("width"), "horizontal");
+                            if (style.has("ratio")) {
+                                Float ratio = JasonHelper.ratio(style.getString("ratio"));
+                                height = width / ratio;
+                            }
                         }
                     } catch (Exception e) {
                     }
                 } else {
-                    // allow styling to override how the element width is treated / opt out of weighted width
-                    if (style.has("android_wrap_content") && style.getBoolean("android_wrap_content")) {
-                        width = LinearLayout.LayoutParams.WRAP_CONTENT;
-                    } else {
-                        // in a horizontal layout, the child components shouldn't fight with width.
-                        // All must be flexible width unless otherwise specified.
-                        width = 0;
-                        weight = 1;
-                    }
+                    // in a horizontal layout, the child components shouldn't fight with width.
+                    // All must be flexible width unless otherwise specified.
+                    width = 0;
+                    weight = 1;
                 }
                 if (style.has("height")) {
                     try {
