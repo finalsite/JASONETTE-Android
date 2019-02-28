@@ -23,8 +23,7 @@ import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
@@ -450,7 +449,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
         }
 
-        class BackgroundImage extends SimpleTarget<GlideDrawable> {
+        class BackgroundImage extends SimpleTarget<Drawable> {
             LinearLayout layout;
             int corner_radius;
             public BackgroundImage(LinearLayout layout, int corner_radius) {
@@ -458,7 +457,9 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 this.corner_radius = corner_radius;
             }
             @Override
-            public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+            public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
+                this.layout.setBackground(resource);
+
                 LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) this.layout.getLayoutParams();
                 Bitmap backgroundBitmap = drawableToBitmap(resource);
 
@@ -530,6 +531,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 canvas.drawBitmap(source, null, targetRect, null);
 
                 return dest;
+
             }
         }
 
@@ -631,17 +633,13 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                     // background
                     if (style.has("background")) {
+
                         String background = style.getString("background");
                         final int corner_radius = style.has("corner_radius") ? (int) JasonHelper.pixels(root_context, style.getString("corner_radius"), type) : 0;
                         if (background.matches("(file|http[s]?):\\/\\/.*")) {
                             JSONObject c = new JSONObject();
                             c.put("url", background);
-                            DiskCacheStrategy cacheStrategy = DiskCacheStrategy.RESULT;
-                            // gif doesn't work with RESULT cache strategy
-                            // TODO: Check with Glide V4
-                            if (background.matches(".*\\.gif")) {
-                                cacheStrategy = DiskCacheStrategy.SOURCE;
-                            }
+                            DiskCacheStrategy cacheStrategy = DiskCacheStrategy.AUTOMATIC;
                             Glide.with(root_context)
                                     .load(JasonImageComponent.resolve_url(c, root_context))
                                     .diskCacheStrategy(cacheStrategy)

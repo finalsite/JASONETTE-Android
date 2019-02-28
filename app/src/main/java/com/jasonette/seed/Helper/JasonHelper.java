@@ -6,13 +6,10 @@ import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import android.util.DisplayMetrics;
 import android.util.TypedValue;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.jasonette.seed.Core.JasonFragment;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Launcher.Launcher;
 

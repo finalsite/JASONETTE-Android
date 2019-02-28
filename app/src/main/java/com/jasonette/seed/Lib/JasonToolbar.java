@@ -92,6 +92,13 @@ public class JasonToolbar extends Toolbar {
             addView(logoView);
         }
 
+        // older phones with different aspect ratios than what is common today can sometimes end up making the
+        // imageWidth be the same as the device's pixel width, and because of various issues with the toolbar sizing
+        // and it's control over the images placed inside of it we need to maintain ~ 60 pixels of space for it to
+        // not bleed out or not center properly
+        if (getResources().getDisplayMetrics().widthPixels - imageWidth < 60) {
+            imageWidth = getResources().getDisplayMetrics().widthPixels - 60;
+        }
         // manage positioning
         Toolbar.LayoutParams params = new Toolbar.LayoutParams(imageWidth, imageHeight);
         params.gravity = (alignment == -1) ? Gravity.CENTER : alignment;
@@ -101,6 +108,7 @@ public class JasonToolbar extends Toolbar {
 
         // load image with glide
         Glide.with(getContext())
+                .asDrawable()
                 .load(JasonImageComponent.resolve_url(url, getContext()))
                 .into(logoView);
     }
