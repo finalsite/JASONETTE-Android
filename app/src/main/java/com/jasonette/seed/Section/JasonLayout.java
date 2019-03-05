@@ -14,7 +14,6 @@ public class JasonLayout {
 
         try {
             JSONObject style = JasonHelper.style(item, root_context);
-            JSONObject parent_style = JasonHelper.style(parent, root_context);
 
             String item_type = item.getString("type");
 
@@ -51,6 +50,8 @@ public class JasonLayout {
                 }
 
             } else if (parent.getString("type").equalsIgnoreCase("vertical")) {
+
+                JSONObject parent_style = JasonHelper.style(parent, root_context);
 
                 if (style.has("height")) {
                     try {
