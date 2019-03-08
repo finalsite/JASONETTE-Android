@@ -60,7 +60,7 @@ public class JasonLabelComponent {
                 if (component.has("line_limit")) {
                     ((TextView) view).setSingleLine(false);
                     ((TextView) view).setEllipsize(TextUtils.TruncateAt.END);
-                    ((TextView) view).setLines(component.getInt("line_limit"));
+                    ((TextView) view).setMaxLines(component.getInt("line_limit"));
                 }
 
 
