@@ -62,7 +62,8 @@ public class JasonLayout {
                         }
                     } catch (Exception e) { }
                 } else {
-                    if(parent_style.has("height") && (item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space"))){
+                    boolean parent_has_height = parent_style.has("height") || (parent_style.has("ratio") && parent_style.has("width"));
+                    if(parent_has_height && (item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space"))){
                         // layouts should have flexible height inside a vertical layout (that has a specific height defined)
                         height = 0;
                         weight = 1;
@@ -123,6 +124,9 @@ public class JasonLayout {
             }
 
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams((int)width, (int)height);
+            if (style.has("weight")) {
+                weight = style.getInt("weight");
+            }
             if (weight > 0) {
                 layoutParams.weight = weight;
             }

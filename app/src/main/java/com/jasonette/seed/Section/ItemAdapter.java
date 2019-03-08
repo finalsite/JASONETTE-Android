@@ -1,9 +1,18 @@
 package com.jasonette.seed.Section;
 
 import android.content.Context;
+
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSnapHelper;
+import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.Gravity;
@@ -20,6 +29,8 @@ import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Core.JasonViewActivity;
+import com.jasonette.seed.Lib.PageIndicatorDecoration;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -140,7 +151,9 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         String stringified_item;
         if(item.has("horizontal_section")){
             try {
-                JSONArray horizontal_section_items = item.getJSONArray("horizontal_section");
+                JSONObject horizontal_section = item.getJSONObject("horizontal_section");
+                JSONArray horizontal_section_items = horizontal_section.getJSONArray("items");
+
                 // assuming that the section would contain at least one item,
                 // we will take the first item from the section and generate the signature
                 JSONObject first_item = horizontal_section_items.getJSONObject(0);
@@ -240,7 +253,17 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
             // Transform JasonArray into ArrayList
             try {
-                horizontalListAdapter.items = JasonHelper.toArrayList(((JSONArray)json.getJSONArray("horizontal_section")));
+                JSONObject horizontal_section = (JSONObject)json.getJSONObject("horizontal_section");
+                if (horizontal_section.has("style")) {
+                    JSONObject style = horizontal_section.getJSONObject("style");
+                    if (style.has("snap")) {
+                        PagerSnapHelper snapHelper = new PagerSnapHelper();
+                        snapHelper.attachToRecyclerView((RecyclerView) viewHolder.itemView);
+                        ((RecyclerView) viewHolder.itemView).addItemDecoration(new PageIndicatorDecoration());
+                    }
+                }
+
+                horizontalListAdapter.items = JasonHelper.toArrayList(horizontal_section.getJSONArray("items"));
             } catch (Exception e) { }
 
             // Update viewholder
@@ -428,16 +451,91 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
         class BackgroundImage extends SimpleTarget<Drawable> {
             LinearLayout layout;
-            public BackgroundImage(LinearLayout layout) {
+            int corner_radius;
+            public BackgroundImage(LinearLayout layout, int corner_radius) {
                 this.layout = layout;
+                this.corner_radius = corner_radius;
             }
             @Override
             public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
                 this.layout.setBackground(resource);
+
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) this.layout.getLayoutParams();
+                Bitmap backgroundBitmap = drawableToBitmap(resource);
+
+                // if we have a height and width center crop the background image
+                // NOTE: this.layout.getWidth()/getHeight() are not reliable here
+                if(params.height > 0 && params.width > 0) {
+                    backgroundBitmap = scaleCenterCrop(backgroundBitmap, params.width, params.height);
+                }
+
+                if (this.corner_radius > 0) {
+                    RoundedBitmapDrawable bitmapDrawable = RoundedBitmapDrawableFactory.create(context.getResources(), backgroundBitmap);
+                    bitmapDrawable.setCornerRadius(corner_radius);
+                    this.layout.setBackground(bitmapDrawable);
+                } else {
+                    this.layout.setBackground(new BitmapDrawable(context.getResources(), backgroundBitmap));
+                }
+            }
+
+            private Bitmap drawableToBitmap (Drawable drawable) {
+                Bitmap bitmap = null;
+
+                if (drawable instanceof BitmapDrawable) {
+                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                    if(bitmapDrawable.getBitmap() != null) {
+                        return bitmapDrawable.getBitmap();
+                    }
+                }
+
+                if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+                    bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+                } else {
+                    bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                }
+
+                Canvas canvas = new Canvas(bitmap);
+                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                drawable.draw(canvas);
+                return bitmap;
+            }
+
+            public Bitmap scaleCenterCrop(Bitmap source, int newWidth, int newHeight) {
+                int sourceWidth = source.getWidth();
+                int sourceHeight = source.getHeight();
+
+                // Compute the scaling factors to fit the new height and width, respectively.
+                // To cover the final image, the final scaling will be the bigger
+                // of these two.
+                float xScale = (float) newWidth / sourceWidth;
+                float yScale = (float) newHeight / sourceHeight;
+                float scale = Math.max(xScale, yScale);
+
+                // Now get the size of the source bitmap when scaled
+                float scaledWidth = scale * sourceWidth;
+                float scaledHeight = scale * sourceHeight;
+
+                // Let's find out the upper left coordinates if the scaled bitmap
+                // should be centered in the new size give by the parameters
+                float left = (newWidth - scaledWidth) / 2;
+                float top = (newHeight - scaledHeight) / 2;
+
+                // The target rectangle for the new, scaled version of the source bitmap will now
+                // be
+                RectF targetRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
+
+                // Finally, we create a new bitmap of the specified size and draw our new,
+                // scaled bitmap onto it.
+                Bitmap dest = Bitmap.createBitmap(newWidth, newHeight, source.getConfig());
+                Canvas canvas = new Canvas(dest);
+                canvas.drawBitmap(source, null, targetRect, null);
+
+                return dest;
+
             }
         }
 
-        public LinearLayout buildLayout(LinearLayout layout, JSONObject item, JSONObject parent, int level) {
+        public LinearLayout buildLayout(final LinearLayout layout, JSONObject item, JSONObject parent, int level) {
             if (exists) {
                 try {
                     JSONArray components = item.getJSONArray("components");
@@ -535,26 +633,30 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                     // background
                     if (style.has("background")) {
-                        if(level == 0) {
-                            // top level. allow image background
-                            String background = style.getString("background");
-                            if (background.matches("(file|http[s]?):\\/\\/.*")) {
-                                JSONObject c = new JSONObject();
-                                c.put("url", background);
-                                DiskCacheStrategy cacheStrategy = DiskCacheStrategy.AUTOMATIC;
-                                Glide.with(root_context)
-                                        .load(JasonImageComponent.resolve_url(c, root_context))
-                                        .diskCacheStrategy(cacheStrategy)
-                                        .into(new BackgroundImage(layout));
+
+                        String background = style.getString("background");
+                        final int corner_radius = style.has("corner_radius") ? (int) JasonHelper.pixels(root_context, style.getString("corner_radius"), type) : 0;
+                        if (background.matches("(file|http[s]?):\\/\\/.*")) {
+                            JSONObject c = new JSONObject();
+                            c.put("url", background);
+                            DiskCacheStrategy cacheStrategy = DiskCacheStrategy.AUTOMATIC;
+                            Glide.with(root_context)
+                                    .load(JasonImageComponent.resolve_url(c, root_context))
+                                    .diskCacheStrategy(cacheStrategy)
+                                    .into(new BackgroundImage(layout, corner_radius));
+                        } else {
+                            // plain background
+                            if (corner_radius > 0) {
+                                Bitmap backgroundColor = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+                                backgroundColor.eraseColor(JasonHelper.parse_color(style.getString("background")));
+                                RoundedBitmapDrawable bitmapDrawable = RoundedBitmapDrawableFactory.create(root_context.getResources(), backgroundColor);
+                                bitmapDrawable.setCornerRadius(corner_radius);
+                                layout.setBackground(bitmapDrawable);
                             } else {
-                                // plain background
                                 layout.setBackgroundColor(JasonHelper.parse_color(style.getString("background")));
                             }
-                        } else {
-                            layout.setBackgroundColor(JasonHelper.parse_color(style.getString("background")));
                         }
                     }
-
 
                     // spacing
                     for (int i = 0; i < components.length(); i++) {

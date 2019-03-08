@@ -1545,7 +1545,7 @@ public class JasonFragment extends Fragment {
                         }
                     }
 
-                    if (head.has("data") && head.has("templates") && head.getJSONObject("templates").has("body")) {
+                    if (head.has("templates") && head.getJSONObject("templates").has("body")) {
                         model.set("state", new JSONObject());
                         render(new JSONObject(), model.state, new JSONObject(), context);
 
@@ -1926,7 +1926,7 @@ public class JasonFragment extends Fragment {
                             // Let's add the entire section as an item, under:
                             // "horizontal_section": [items]
                             JSONObject horizontal_section = new JSONObject();
-                            horizontal_section.put("horizontal_section", section.getJSONArray("items"));
+                            horizontal_section.put("horizontal_section", section);
                             section_items.add(horizontal_section);
                         }
                     } else {
