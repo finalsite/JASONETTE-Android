@@ -1545,7 +1545,7 @@ public class JasonFragment extends Fragment {
                         }
                     }
 
-                    if (head.has("data") && head.has("templates") && head.getJSONObject("templates").has("body")) {
+                    if (head.has("templates") && head.getJSONObject("templates").has("body")) {
                         model.set("state", new JSONObject());
                         render(new JSONObject(), model.state, new JSONObject(), context);
 
