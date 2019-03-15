@@ -21,27 +21,24 @@ public class JasonParser {
     private static JasonParser instance = null;
 
     private JasonParser(){
-        this.listener = null;
     }
 
     public interface JasonParserListener {
         public void onFinished(JSONObject json);
     }
-    private JasonParserListener listener;
-    private V8 juice;
-    public void setParserListener(JasonParserListener listener){
-        this.listener = listener;
-    }
 
+    private V8 juice;
 
     private class Task {
         public String data_type;
         public JSONObject data;
         public Object template;
-        public Task(String data_type, JSONObject data, Object template) {
+        private JasonParserListener listener;
+        public Task(String data_type, JSONObject data, Object template, JasonParserListener listener) {
             this.data_type = data_type;
             this.data = data;
             this.template = template;
+            this.listener = listener;
         }
     }
     private LinkedBlockingQueue<Task> taskQueue = new LinkedBlockingQueue<Task>();
@@ -94,7 +91,7 @@ public class JasonParser {
                 res = new JSONObject(val);
             }
 
-            listener.onFinished(res);
+            task.listener.onFinished(res);
 
         } catch (Exception e){
             Timber.w(e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -143,9 +140,9 @@ public class JasonParser {
 
 
     private Thread thread;
-    public void parse(final String data_type, final JSONObject data, final Object template, final Context context){
+    public void parse(final String data_type, final JSONObject data, final Object template, final JasonParserListener listener, final Context context){
         try{
-            taskQueue.put(new Task(data_type, data, template));
+            taskQueue.put(new Task(data_type, data, template, listener));
             if(thread == null) {
                 thread = new Thread(new Runnable() {
                     @Override

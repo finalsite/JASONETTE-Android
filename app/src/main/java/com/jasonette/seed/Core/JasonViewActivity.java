@@ -231,14 +231,14 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
             if (action instanceof JSONArray) {
                 // resolve
-                JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject reduced_action) {
                         final_call(reduced_action, data, event, context);
                     }
-                });
+                };
 
-                JasonParser.getInstance(this).parse("json", model.state, action, context);
+                JasonParser.getInstance(this).parse("json", model.state, action, listener, context);
             } else {
                 final_call((JSONObject)action, data, event, context);
             }
@@ -261,7 +261,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             } else if (action.has("options")) {
                 // if action has options, we need to parse out the options first
                 Object options = action.get("options");
-                JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
@@ -272,8 +272,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(this).parse("json", model.state, options, context);
+                };
+                JasonParser.getInstance(this).parse("json", model.state, options, listener, context);
             } else if (action.length() > 0) {
                 // otherwise we can just call immediately
                 exec(action, model.state, event, context);
@@ -346,7 +346,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             // construct options
             if (action.has("options")) {
                 Object options = action.get("options");
-                JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
@@ -355,8 +355,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(this).parse("json", model.state, options, context);
+                };
+                JasonParser.getInstance(this).parse("json", model.state, options, listener, context);
             } else {
                 invoke_lambda(action, data, null, context);
             }
@@ -681,9 +681,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 // 2. If `options` exists, use that as the data to pass to the next action
                 if(options.has("options")){
                     Object new_options = options.get("options");
-
-                    // take the options and parse it with current model.state
-                    JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                    JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                         @Override
                         public void onFinished(JSONObject parsed_options) {
                             try {
@@ -694,8 +692,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                 JasonHelper.next("error", action, new JSONObject(), new JSONObject(), JasonViewActivity.this);
                             }
                         }
-                    });
-                    JasonParser.getInstance(this).parse("json", model.state, new_options, context);
+                    };
+                    JasonParser.getInstance(this).parse("json", model.state, new_options, listener, context);
 
                 }
 
@@ -959,7 +957,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
         if (switchTab) {
             fragmentManager.popBackStack();
-            fragmentTransaction.replace(R.id.jason_fragment_container, fragment);
+            fragmentTransaction.add(R.id.jason_fragment_container, fragment);
         } else {
             fragmentTransaction.add(R.id.jason_fragment_container, fragment);
         }

@@ -303,7 +303,7 @@ public class JasonModel{
             refs.put("$document", jason);
 
             // parse
-            JasonParser.getInstance(this.view).setParserListener(new JasonParser.JasonParserListener() {
+            JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                 @Override
                 public void onFinished(JSONObject resolved_jason) {
                     try {
@@ -312,8 +312,8 @@ public class JasonModel{
                         Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                     }
                 }
-            });
-            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, this.view);
+            };
+            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, listener, this.view);
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
@@ -337,7 +337,7 @@ public class JasonModel{
             refs.put("$document", jason);
 
             // parse
-            JasonParser.getInstance(this.view).setParserListener(new JasonParser.JasonParserListener() {
+            JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                 @Override
                 public void onFinished(JSONObject resolved_jason) {
                     try {
@@ -346,8 +346,8 @@ public class JasonModel{
                         Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                     }
                 }
-            });
-            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, this.view);
+            };
+            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, listener, this.view);
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
