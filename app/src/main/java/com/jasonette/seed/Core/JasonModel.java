@@ -197,7 +197,7 @@ public class JasonModel{
                                 fetch_local("file://error.json");
                             }
                         }
-                    } else {
+                    } else if (self.view.model.url.equalsIgnoreCase(call.request().url().toString())){
                         String res = response.body().string();
                         refs = new JSONObject();
                         resolve_and_build(res);

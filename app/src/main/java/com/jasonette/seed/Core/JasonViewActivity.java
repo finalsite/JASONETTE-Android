@@ -144,6 +144,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     @Override
     public void onBackPressed() {
+        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
         FragmentManager fragmentManager = getSupportFragmentManager();
         if (fragmentManager.getBackStackEntryCount() == 1) {
             finish();
@@ -170,6 +171,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     @Override
     public boolean onSupportNavigateUp() {
+        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
         FragmentManager fragmentManager = getSupportFragmentManager();
         // Call immediate pop so that we can grab the proper currentFragment below for calling onResume
         fragmentManager.popBackStackImmediate();
