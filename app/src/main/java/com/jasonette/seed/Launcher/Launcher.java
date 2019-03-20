@@ -187,6 +187,7 @@ public class Launcher extends Application {
             float height = displayMetrics.heightPixels / displayMetrics.density;
             device.put("width", width);
             device.put("height", height);
+            device.put("density", displayMetrics.density);
             device.put("language", Locale.getDefault().toString());
 
             JSONObject os = new JSONObject();
