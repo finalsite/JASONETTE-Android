@@ -33,17 +33,21 @@ public class JasonHelper {
 
     public static JSONObject style(JSONObject component, Context root_context) {
         JSONObject style = new JSONObject();
+        JasonViewActivity activity = ((JasonViewActivity) root_context);
         try {
             if (component.has("class")) {
                 String style_class_string = component.getString("class");
                 String[] style_classes = style_class_string.split("\\s+");
                 for(int i = 0 ; i < style_classes.length ; i++){
-                    JSONObject astyle = ((JasonViewActivity) root_context).model.jason.getJSONObject("$jason").getJSONObject("head").getJSONObject("styles").getJSONObject(style_classes[i]);
-                    Iterator iterator = astyle.keys();
-                    String style_key;
-                    while (iterator.hasNext()) {
-                        style_key = (String) iterator.next();
-                        style.put(style_key, astyle.get(style_key));
+                    if (activity.stylesheet.has(style_classes[i])) {
+                        JSONObject astyle = activity.stylesheet.getJSONObject(style_classes[i]);
+
+                        Iterator iterator = astyle.keys();
+                        String style_key;
+                        while (iterator.hasNext()) {
+                            style_key = (String) iterator.next();
+                            style.put(style_key, astyle.get(style_key));
+                        }
                     }
                 }
             }
