@@ -661,14 +661,14 @@ public class JasonFragment extends Fragment {
 
             if (action instanceof JSONArray) {
                 // resolve
-                JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject reduced_action) {
-                        final_call(reduced_action, data, event, context);
+                        final_call(reduced_action, data, event, getContext());
                     }
-                });
+                };
 
-                JasonParser.getInstance(context).parse("json", model.state, action, context);
+                JasonParser.getInstance(context).parse("json", model.state, action, listener, context);
 
             } else {
                 final_call((JSONObject)action, data, event, context);
@@ -692,19 +692,19 @@ public class JasonFragment extends Fragment {
             } else if (action.has("options")) {
                 // if action has options, we need to parse out the options first
                 Object options = action.get("options");
-                JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
                             JSONObject action_with_parsed_options = new JSONObject(action.toString());
                             action_with_parsed_options.put("options", parsed_options);
-                            exec(action_with_parsed_options, model.state, event, context);
+                            exec(action_with_parsed_options, model.state, event, getContext());
                         } catch (Exception e) {
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(context).parse("json", model.state, options, context);
+                };
+                JasonParser.getInstance(context).parse("json", model.state, options, listener, context);
             } else if (action.length() > 0) {
                 // otherwise we can just call immediately
                 exec(action, model.state, event, context);
@@ -776,17 +776,17 @@ public class JasonFragment extends Fragment {
             // construct options
             if(action.has("options")) {
                 Object options = action.get("options");
-                JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
-                            invoke_lambda(action, data, parsed_options, context);
+                            invoke_lambda(action, data, parsed_options, getContext());
                         } catch (Exception e) {
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(context).parse("json", model.state, options, context);
+                };
+                JasonParser.getInstance(context).parse("json", model.state, options, listener, context);
             } else {
                 invoke_lambda(action, data, null, context);
             }
@@ -965,7 +965,7 @@ public class JasonFragment extends Fragment {
                 JSONObject data = addToObject("$jason", data_string);
 
                 // call next
-                call(action_string, data.toString(), event_string, context);
+                call(action_string, data.toString(), event_string, getContext());
             } catch (Exception e){
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
@@ -984,7 +984,7 @@ public class JasonFragment extends Fragment {
                 JSONObject data = addToObject("$jason", data_string);
 
                 // call next
-                call(action_string, data.toString(), event_string, context);
+                call(action_string, data.toString(), event_string, getContext());
             } catch (Exception e){
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
@@ -1006,7 +1006,7 @@ public class JasonFragment extends Fragment {
                 JSONObject data = addToObject("$jason", data_string);
 
                 // call next
-                call(action_string, data.toString(), event_string, context);
+                call(action_string, data.toString(), event_string, getContext());
             } catch (Exception e){
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
@@ -1211,9 +1211,7 @@ public class JasonFragment extends Fragment {
                 // 2. If `options` exists, use that as the data to pass to the next action
                 if(options.has("options")){
                     Object new_options = options.get("options");
-
-                    // take the options and parse it with current model.state
-                    JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                    JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                         @Override
                         public void onFinished(JSONObject parsed_options) {
                             try {
@@ -1224,8 +1222,8 @@ public class JasonFragment extends Fragment {
                                 JasonHelper.next("error", action, new JSONObject(), new JSONObject(), getContext());
                             }
                         }
-                    });
-                    JasonParser.getInstance(context).parse("json", model.state, new_options, context);
+                    };
+                    JasonParser.getInstance(context).parse("json", model.state, new_options, listener, context);
 
                 }
                 // 3. If `options` doesn't exist, forward the data from the previous action
@@ -1342,21 +1340,21 @@ public class JasonFragment extends Fragment {
             try {
                 // If the request returned "head_styles" we want to update the model to be able to use them for rendering.
                 JSONObject template_styles = data.getJSONObject("$get").getJSONObject("head_styles");
-                model.jason.getJSONObject("$jason").getJSONObject("head").put("styles", template_styles);
+                ((JasonViewActivity) context).stylesheet.merge(template_styles);
             } catch (JSONException e) {}
 
             JSONObject templates = head.getJSONObject("templates");
 
             JSONObject template = templates.getJSONObject(template_name);
-            JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+            JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                 @Override
                 public void onFinished(JSONObject body) {
                     setup_body(body);
-                    JasonHelper.next("success", action, data, event, context);
+                    JasonHelper.next("success", action, data, event, getContext());
                 }
-            });
+            };
 
-            JasonParser.getInstance(context).parse(type, data, template, context);
+            JasonParser.getInstance(context).parse(type, data, template, listener, context);
 
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -1525,6 +1523,10 @@ public class JasonFragment extends Fragment {
 
                 if (jason.getJSONObject("$jason").has("head")) {
                     final JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
+
+                    if(head.has("styles")) {
+                        ((JasonViewActivity) context).stylesheet.merge(head.getJSONObject("styles"));
+                    }
 
                     if (head.has("agents")) {
                         final JSONObject agents = head.getJSONObject("agents");

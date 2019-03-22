@@ -325,7 +325,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             try {
                 put("type", "image");
                 put("url", "file://chevron-right.png");
-                put("style", new JSONObject("{height: 20, width: 20}"));
+                put("style", new JSONObject("{\"height\": 20, \"width\": 20}"));
             } catch (JSONException e) { }
         }};
 
