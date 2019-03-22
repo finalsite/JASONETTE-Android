@@ -1524,10 +1524,6 @@ public class JasonFragment extends Fragment {
                 if (jason.getJSONObject("$jason").has("head")) {
                     final JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
 
-                    if(head.has("styles")) {
-                        ((JasonViewActivity) context).stylesheet.merge(head.getJSONObject("styles"));
-                    }
-
                     if (head.has("agents")) {
                         final JSONObject agents = head.getJSONObject("agents");
                         Iterator<String> iterator = agents.keys();
