@@ -80,6 +80,10 @@ public class JasonNetworkAction {
                     }
                 }
 
+                if (options.has("show_loading")) {
+                    ((JasonViewActivity)context).showProgressBar();
+                }
+
                 if(method.equalsIgnoreCase("get")) {
                     Uri.Builder b = Uri.parse(url).buildUpon();
 
@@ -190,6 +194,7 @@ public class JasonNetworkAction {
                     @Override
                     public void onFailure(Call call, IOException e) {
                         Timber.e(e);
+                        ((JasonViewActivity)context).hideProgressBar();
                         try {
                             if (action.has("error")) {
 
@@ -209,6 +214,7 @@ public class JasonNetworkAction {
 
                     @Override
                     public void onResponse(Call call, final Response response) throws IOException {
+                        ((JasonViewActivity)context).hideProgressBar();
                         if (!response.isSuccessful()) {
                             try {
                                 if (action.has("error")) {
