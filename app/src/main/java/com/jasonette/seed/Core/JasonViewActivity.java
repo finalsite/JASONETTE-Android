@@ -966,6 +966,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         fragment.setArguments(bundle);
 
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left, R.anim.enter_from_left, R.anim.exit_to_right);
         if (replace) {
             fragmentManager.popBackStack();
             fragmentTransaction.add(R.id.jason_fragment_container, fragment);

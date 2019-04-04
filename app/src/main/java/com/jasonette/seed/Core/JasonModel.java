@@ -86,6 +86,18 @@ public class JasonModel{
         }
 
         // session
+        refresh_session();
+
+        try {
+            JSONObject v = new JSONObject();
+            v.put("url", this.url);
+            ((Launcher)(this.view.getApplicationContext())).setEnv("view", v);
+        } catch (Exception e){
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        };
+    }
+
+    private void refresh_session() {
         SharedPreferences session_pref = view.getSharedPreferences("session", 0);
         this.session = new JSONObject();
         try {
@@ -95,14 +107,6 @@ public class JasonModel{
                 String str = session_pref.getString(session_domain, null);
                 this.session = new JSONObject(str);
             }
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        };
-
-        try {
-            JSONObject v = new JSONObject();
-            v.put("url", this.url);
-            ((Launcher)(this.view.getApplicationContext())).setEnv("view", v);
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         };
@@ -147,6 +151,7 @@ public class JasonModel{
             // SESSION HANDLING
 
             // Attach Header from Session
+            refresh_session(); // make sure we pick up any session changes
             if(session != null && session.has("header")) {
                 Iterator<?> keys = session.getJSONObject("header").keys();
                 while (keys.hasNext()) {
