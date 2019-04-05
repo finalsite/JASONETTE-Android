@@ -14,6 +14,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -95,8 +96,9 @@ public class JasonTextfieldComponent {
                 if (style.has("shadow_border")) {
                     // need to adjust height and width to account for the drop shadow background
                     int shadow_padding = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, context.getResources().getDisplayMetrics());
-                    view.getLayoutParams().height = view.getLayoutParams().height + shadow_padding + padding_top + padding_bottom;
-                    view.getLayoutParams().width = view.getLayoutParams().width + shadow_padding;
+                    ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+                    layoutParams.height = layoutParams.height + shadow_padding + padding_top + padding_bottom;
+                    layoutParams.width = layoutParams.width + shadow_padding;
                     view.setBackgroundResource(R.drawable.shadow);
                     padding_left = padding_left + shadow_padding / 2;
                 }

@@ -337,6 +337,8 @@ public class JasonFragment extends Fragment {
         // reset "offline mode"
         model.offline = false;
 
+        loaded = false;
+
         // Reset local variables when reloading
         model.var = new JSONObject();
 
