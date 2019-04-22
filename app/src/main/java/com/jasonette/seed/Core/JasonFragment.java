@@ -101,6 +101,7 @@ public class JasonFragment extends Fragment {
 
     public View focusView = null;
     private Intent intent;
+    private int requestCode;
     private Context context;
 
     Parcelable listState;
@@ -134,6 +135,7 @@ public class JasonFragment extends Fragment {
         layer_items = new ArrayList<>();
         // Setup Layouts
         intent = getArguments().getParcelable("intent");
+        requestCode = getArguments().getInt("return");
 
         // 1. Create root layout (Relative Layout)
         RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
@@ -335,6 +337,8 @@ public class JasonFragment extends Fragment {
         // reset "offline mode"
         model.offline = false;
 
+        loaded = false;
+
         // Reset local variables when reloading
         model.var = new JSONObject();
 
@@ -473,9 +477,10 @@ public class JasonFragment extends Fragment {
             }
         }
 
+
         if (!firstResume) {
-            onShow();
             JasonViewActivity currentView = (JasonViewActivity) context;
+            onShow();
             // update the view to be using the model for this fragment
             currentView.setModel(model);
             // tell the view to setup it's header/options menu
@@ -588,7 +593,7 @@ public class JasonFragment extends Fragment {
 
      *************************************************************/
 
-    void onShow(){
+    public void onShow(){
         loaded = true;
         try {
             JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
@@ -1381,12 +1386,20 @@ public class JasonFragment extends Fragment {
 
     public void ok ( final JSONObject action, JSONObject data, JSONObject event, Context context){
         try {
+            ((JasonViewActivity) context).back(action, data, event, context);
+
+            // if we don't have a request code then there probably wasn't something expecting a return
+            if (requestCode == 0) return;
+
             Intent intent = new Intent();
             if (action.has("options")) {
                 intent.putExtra("return", action.get("options").toString());
             }
-            ((JasonViewActivity) context).setResult(JasonViewActivity.RESULT_OK, intent);
-            ((JasonViewActivity) context).finish();
+            JSONObject resolve_intent = new JSONObject();
+            resolve_intent.put("type", "success");
+            resolve_intent.put("name", requestCode);
+            resolve_intent.put("intent", intent);
+            ((Launcher)context.getApplicationContext()).trigger(resolve_intent, (JasonViewActivity)context);
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
@@ -1523,10 +1536,6 @@ public class JasonFragment extends Fragment {
 
                 if (jason.getJSONObject("$jason").has("head")) {
                     final JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
-
-                    if(head.has("styles")) {
-                        ((JasonViewActivity) context).stylesheet.merge(head.getJSONObject("styles"));
-                    }
 
                     if (head.has("agents")) {
                         final JSONObject agents = head.getJSONObject("agents");

@@ -10,14 +10,18 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Core.JasonViewActivity;
+import com.jasonette.seed.R;
+
 import org.json.JSONObject;
 
 public class JasonTextfieldComponent {
@@ -56,10 +60,8 @@ public class JasonTextfieldComponent {
                     ((EditText)view).setTextSize(Float.parseFloat(style.getString("size")));
                 }
 
-
                 ((EditText)view).setSingleLine();
                 ((EditText)view).setLines(1);
-
 
                 ((EditText)view).setEllipsize(TextUtils.TruncateAt.END);
 
@@ -91,8 +93,17 @@ public class JasonTextfieldComponent {
                     padding_bottom = (int)JasonHelper.pixels(context, style.getString("padding_bottom"), "vertical");
                 }
 
-                view.setPadding(padding_left, padding_top, padding_right, padding_bottom);
+                if (style.has("shadow_border")) {
+                    // need to adjust height and width to account for the drop shadow background
+                    int shadow_padding = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, context.getResources().getDisplayMetrics());
+                    ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+                    layoutParams.height = layoutParams.height + shadow_padding + padding_top + padding_bottom;
+                    layoutParams.width = layoutParams.width + shadow_padding;
+                    view.setBackgroundResource(R.drawable.shadow);
+                    padding_left = padding_left + shadow_padding / 2;
+                }
 
+                view.setPadding(padding_left, padding_top, padding_right, padding_bottom);
 
                 // placeholder
                 if(component.has("placeholder")){

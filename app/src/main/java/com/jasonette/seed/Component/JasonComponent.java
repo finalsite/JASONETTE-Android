@@ -112,7 +112,7 @@ public class JasonComponent {
                 padding_bottom = (int)JasonHelper.pixels(root_context, style.getString("padding_bottom"), "vertical");
             }
 
-            if (style.has("corner_radius")) {
+            if (style.has("corner_radius") && !style.has("shadow_border")) {
                 float corner = JasonHelper.pixels(root_context, style.getString("corner_radius"), "horizontal");
                 int color = ContextCompat.getColor(root_context, android.R.color.transparent);
                 GradientDrawable cornerShape = new GradientDrawable();

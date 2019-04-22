@@ -942,8 +942,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     if (transition.equalsIgnoreCase("modal")) {
                         JasonHelper.dispatchIntent(action, data, event, context, intent, callback);
                     } else {
-                        JasonHelper.dispatchIntent(action, data, event, context, null, callback);
-                        dispatchFragment(intent, false);
+                        int requestCode = JasonHelper.dispatchIntent(action, data, event, context, null, callback);
+                        dispatchFragment(intent, false, requestCode);
                     }
                 }
             }
@@ -952,18 +952,28 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
     }
 
-    private void dispatchFragment(Intent intent, boolean switchTab) {
+    private void dispatchFragment(Intent intent, boolean replace) {
+        dispatchFragment(intent, replace, 0);
+    }
+
+    private void dispatchFragment(Intent intent, boolean replace, int requestCode) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         JasonFragment fragment = new JasonFragment();
+
         Bundle bundle = new Bundle();
         bundle.putParcelable("intent", intent);
+        bundle.putInt("return", requestCode); // reference to the fragment intent that created it and it's callback
         fragment.setArguments(bundle);
 
-        if (switchTab) {
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left, R.anim.enter_from_left, R.anim.exit_to_right);
+        if (replace) {
             fragmentManager.popBackStack();
             fragmentTransaction.add(R.id.jason_fragment_container, fragment);
         } else {
+            if (currentFragment() != null) {
+                currentFragment().onPause();
+            }
             fragmentTransaction.add(R.id.jason_fragment_container, fragment);
         }
         fragmentTransaction.addToBackStack(null);
@@ -978,25 +988,17 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         currentFragment().onSwitchTab(newUrl, newParams, intent);
     }
 
-    public void back ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        finish();
+    public void back ( final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ((JasonViewActivity)context).onBackPressed();
+            }
+        });
     }
 
     public void close ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        finish();
-    }
-
-    public void ok ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        try {
-            Intent intent = new Intent();
-            if (action.has("options")) {
-                intent.putExtra("return", action.get("options").toString());
-            }
-            setResult(RESULT_OK, intent);
-            finish();
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
+        back(action, data, event, context);
     }
 
     public void unlock ( final JSONObject action, JSONObject data, JSONObject event, Context context){

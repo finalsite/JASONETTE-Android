@@ -39,9 +39,17 @@ public class JasonHelper {
                 String style_class_string = component.getString("class");
                 String[] style_classes = style_class_string.split("\\s+");
                 for(int i = 0 ; i < style_classes.length ; i++){
+
+                    // if we can't find the style it may not have been loaded yet, merge in what's available and we'll check again
+                    if (!activity.stylesheet.has(style_classes[i])) {
+                        JSONObject head = activity.model.jason.getJSONObject("$jason").getJSONObject("head");
+                        if (head.has("styles")) {
+                            activity.stylesheet.merge(head.getJSONObject("styles"));
+                        }
+                    }
+
                     if (activity.stylesheet.has(style_classes[i])) {
                         JSONObject astyle = activity.stylesheet.getJSONObject(style_classes[i]);
-
                         Iterator iterator = astyle.keys();
                         String style_key;
                         while (iterator.hasNext()) {
@@ -49,6 +57,7 @@ public class JasonHelper {
                             style.put(style_key, astyle.get(style_key));
                         }
                     }
+
                 }
             }
         } catch (Exception e){
@@ -88,27 +97,35 @@ public class JasonHelper {
         }
     }
 
-    public static void next(String type, JSONObject action, Object data, final JSONObject event, Context context) {
-        try {
-            if (action.has(type)) {
-                Intent intent = new Intent(type);
-                intent.putExtra("action", action.get(type).toString());
-                intent.putExtra("data", data.toString());
-                intent.putExtra("event", event.toString());
-                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-            } else {
-                // Release everything and finish
-                Intent intent = new Intent("call");
-                JSONObject unlock_action = new JSONObject();
-                unlock_action.put("type", "$unlock");
+    public static void next(final String type, final JSONObject action, final Object data, final JSONObject event, final Context context) {
 
-                intent.putExtra("action", unlock_action.toString());
-                intent.putExtra("event", event.toString());
-                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        // make sure this all happens after any UI changes that are in queue (ie. going back in the view stack)
+        ((JasonViewActivity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (action.has(type)) {
+                        Intent intent = new Intent(type);
+                        intent.putExtra("action", action.get(type).toString());
+                        intent.putExtra("data", data.toString());
+                        intent.putExtra("event", event.toString());
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+                    } else {
+                        // Release everything and finish
+                        Intent intent = new Intent("call");
+                        JSONObject unlock_action = new JSONObject();
+                        unlock_action.put("type", "$unlock");
+
+                        intent.putExtra("action", unlock_action.toString());
+                        intent.putExtra("event", event.toString());
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+                    }
+                } catch (Exception e) {
+                    Timber.e(e);
+                }
             }
-        } catch (Exception e) {
-            Timber.e(e);
-        }
+        });
+
     }
 
     /**
@@ -340,7 +357,7 @@ public class JasonHelper {
     // 1. triggers an external Intent
     // 2. attaches a callback with all the payload so that we can pick it up where we left off when the intent returns
     // the callback needs to specify the class name and the method name we wish to trigger after the intent returns
-    public static void dispatchIntent(String name, JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
+    public static int dispatchIntent(String name, JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
         // Generate unique identifier for return value
         // This will be used to name the handlers
         int requestCode;
@@ -382,10 +399,12 @@ public class JasonHelper {
             // it means we are manually going to deal with opening a new Intent
         }
 
+        return requestCode;
+
     }
 
-    public static void dispatchIntent(JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
-        dispatchIntent(String.valueOf((int) (System.currentTimeMillis() % 10000)), action, data, event, context, intent, handler);
+    public static int dispatchIntent(JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
+        return dispatchIntent(String.valueOf((int) (System.currentTimeMillis() % 10000)), action, data, event, context, intent, handler);
     }
 
     public static void callback(JSONObject callback, String result, Context context) {

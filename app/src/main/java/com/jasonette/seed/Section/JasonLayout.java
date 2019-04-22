@@ -1,8 +1,11 @@
 package com.jasonette.seed.Section;
 
 import android.content.Context;
+import android.util.TypedValue;
 import android.widget.LinearLayout;
 import com.jasonette.seed.Helper.JasonHelper;
+import com.jasonette.seed.R;
+
 import org.json.JSONObject;
 
 public class JasonLayout {
