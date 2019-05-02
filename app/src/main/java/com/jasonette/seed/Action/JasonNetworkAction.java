@@ -80,7 +80,7 @@ public class JasonNetworkAction {
                     }
                 }
 
-                if (options.has("show_loading")) {
+                if (options.has("show_loading") && options.getBoolean("show_loading")) {
                     ((JasonViewActivity)context).showProgressBar();
                 }
 
