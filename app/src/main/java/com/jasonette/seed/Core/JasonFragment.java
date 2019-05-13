@@ -33,6 +33,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -150,6 +151,7 @@ public class JasonFragment extends Fragment {
             rootLayout.setClickable(true);
             rootLayout.setLayoutParams(rlp);
             rootLayout.setFitsSystemWindows(true);
+            rootLayout.setBackgroundColor(JasonHelper.parse_color("rgb(255,255,255)"));
         }
 
         // 2. Add Swipe layout
@@ -386,6 +388,8 @@ public class JasonFragment extends Fragment {
 
             // Retrieve the new view's model
             JasonModel m = ((Launcher) context.getApplicationContext()).getTabModel(newUrl + newParams);
+
+            url = newUrl;
 
             if (m == null) {
                 // refresh

@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearSmoothScroller;
@@ -25,6 +26,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+
 import android.util.Base64;
 import android.util.Log;
 import android.util.SparseArray;
@@ -61,6 +63,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,7 +71,7 @@ import java.util.concurrent.Executors;
 import static com.bumptech.glide.Glide.with;
 import static java.lang.Integer.parseInt;
 
-public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, FragmentManager.OnBackStackChangedListener{
+public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     private JasonToolbar toolbar;
     private RecyclerView listView;
     public String url;
@@ -76,6 +79,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     public JSONObject preload;
     public Integer depth;
     public JasonStylesheet stylesheet;
+    private static Integer MINIMUM_FRAGMENTS = 2;
 
     public boolean loaded;
     private boolean resumed;
@@ -119,7 +123,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         setContentView(R.layout.jason_view_activity_layout);
 
         // 1. Create root layout (Relative Layout)
-        getSupportFragmentManager().addOnBackStackChangedListener(this);
         dispatchFragment(getIntent(), false);
 
         // 3. Create body.header
@@ -134,32 +137,72 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         depth = getIntent().getIntExtra("depth", 0);
     }
 
-    @Override
-    public void onBackStackChanged() {
-        shouldDisplayHomeUp();
-    }
-
     public void shouldDisplayHomeUp() {
-        //Enable Up button only if there are entries in the back stack
-        boolean canGoBack = getSupportFragmentManager().getBackStackEntryCount() > 1;
-        getSupportActionBar().setDisplayHomeAsUpEnabled(canGoBack);
+        if (getSupportActionBar() != null) {
+            runOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                    getSupportActionBar().setDisplayHomeAsUpEnabled(getSupportFragmentManager().getFragments().size() > MINIMUM_FRAGMENTS);
+                }
+            });
+        }
     }
 
     @Override
     public void onBackPressed() {
         hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
+
         FragmentManager fragmentManager = getSupportFragmentManager();
-        if (fragmentManager.getBackStackEntryCount() == 1) {
+        if (fragmentManager.getFragments().size() == MINIMUM_FRAGMENTS) {
             finish();
         } else {
-            super.onBackPressed();
-            // Because the view activity still has a fragment we should call onResume on it
-            currentFragment().onResume();
+           popTopFragment(fragmentManager);
         }
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
+
+        popTopFragment(getSupportFragmentManager());
+        return true;
+    }
+
+    private FragmentTransaction beginTransaction(FragmentManager fragmentManager, boolean animate) {
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        if (animate) {
+            fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_right);
+        }
+        return fragmentTransaction;
+    }
+
+    private void popTopFragment(FragmentManager fragmentManager) {
+        // Remove the top fragment on the stack
+        beginTransaction(fragmentManager, true).remove(currentFragment()).commitNow();
+
+        // Because the view activity will still have a fragment we should call onResume on it
+        currentFragment().onResume();
+
+        shouldDisplayHomeUp();
     }
 
     public FrameLayout getFragmentContainer(){
         return findViewById(R.id.jason_fragment_container);
+    }
+
+    public JasonFragment currentFragment() {
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        try {
+            return (JasonFragment) fragments.get(fragments.size() - 1);
+        } catch (Exception e) {
+            // This sometimes fails because of a glide fragment being in the stack. controlling where it is in the stack
+            // is not reliable so instead we are trying to skip it on failed fragment JasonFragment casting
+            if (fragments.size() > 1) {
+                return (JasonFragment) fragments.get(fragments.size() - 2);
+            }
+        }
+        return null;
     }
 
     public HashMap<String, Object> createModules() {
@@ -170,21 +213,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     @Override
     protected void onResume() {
         super.onResume();
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        // Call immediate pop so that we can grab the proper currentFragment below for calling onResume
-        fragmentManager.popBackStackImmediate();
-        // Because the view activity will still have a fragment we should call onResume on it
-        currentFragment().onResume();
-        return true;
-    }
-
-    public JasonFragment currentFragment() {
-        return (JasonFragment) getSupportFragmentManager().findFragmentById(R.id.jason_fragment_container);
     }
 
     public JasonModel createModel(String url, Intent intent) {
@@ -965,27 +993,31 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         bundle.putInt("return", requestCode); // reference to the fragment intent that created it and it's callback
         fragment.setArguments(bundle);
 
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left, R.anim.enter_from_left, R.anim.exit_to_right);
-        if (replace) {
-            fragmentManager.popBackStack();
-            fragmentTransaction.add(R.id.jason_fragment_container, fragment);
-        } else {
-            if (currentFragment() != null) {
-                currentFragment().onPause();
+        // If we are replacing we want to do it more quickly without a transition, the beginTransaction method starts
+        // an animated transaction of fragments, so we avoid using that while replacing.
+        FragmentTransaction fragmentTransaction = beginTransaction(fragmentManager, !replace);
+
+        final JasonFragment currentFragment = currentFragment();
+        if (currentFragment != null) {
+            currentFragment.onPause();
+            if (replace) {
+                fragmentTransaction.remove(currentFragment);
             }
-            fragmentTransaction.add(R.id.jason_fragment_container, fragment);
         }
-        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.add(R.id.jason_fragment_container, fragment);
+
         fragmentTransaction.commit();
+        shouldDisplayHomeUp();
     }
 
     private void onSwitchTab(String newUrl, String newParams, Intent intent) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        while (fragmentManager.getBackStackEntryCount() > 1) {
-            fragmentManager.popBackStackImmediate();
+        while (fragmentManager.getFragments().size() > MINIMUM_FRAGMENTS) {
+            List<Fragment> fragments = fragmentManager.getFragments();
+            beginTransaction(fragmentManager, false).remove(fragments.get(fragments.size() - 1)).commitNow();
         }
         currentFragment().onSwitchTab(newUrl, newParams, intent);
+        shouldDisplayHomeUp();
     }
 
     public void back ( final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
