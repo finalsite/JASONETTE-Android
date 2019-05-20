@@ -1437,6 +1437,13 @@ public class JasonFragment extends Fragment {
             });
         }
     }
+    
+    public void appReload ( final JSONObject action, JSONObject data, JSONObject event, Context context){
+        // clear offline caches and tab models
+        ((Launcher) context.getApplicationContext()).clearTabModels();
+        context.getSharedPreferences("offline", 0).edit().clear().commit();
+        startActivity(new Intent(context, SplashActivity.class));
+    }
 
     public void reload ( final JSONObject action, JSONObject data, JSONObject event, Context context){
         if(model != null){
