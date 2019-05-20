@@ -61,6 +61,9 @@ public class Launcher extends Application {
         currentContext = context;
     }
 
+    public void clearTabModels() {
+        this.models = new JSONObject();
+    }
     public void setTabModel(String url, JasonModel model) {
        try {
             models.put(url, model);
