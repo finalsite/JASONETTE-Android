@@ -714,7 +714,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                 if (style.has("border_color")){
                                     border_color = JasonHelper.parse_color(style.getString("border_color"));
                                 } else {
-                                    border_color = JasonHelper.parse_color("#000000");
+                                    border_color = JasonHelper.COLOR_BLACK;
                                 }
                                 cornerShape.setStroke(border_width, border_color);
                             }
@@ -731,7 +731,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                 if (style.has("border_color")){
                                     border_color = JasonHelper.parse_color(style.getString("border_color"));
                                 } else {
-                                    border_color = JasonHelper.parse_color("#000000");
+                                    border_color = JasonHelper.COLOR_BLACK;
                                 }
                                 GradientDrawable cornerShape = new GradientDrawable();
                                 cornerShape.setStroke(border_width, border_color);
