@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -1628,6 +1629,19 @@ public class JasonFragment extends Fragment {
                         bg = body.get("background");
                     }
 
+
+                    if (body.has("gradient_background")) {
+                        JSONArray backgroundGradient = body.getJSONArray("gradient_background");
+
+                        bg = new GradientDrawable(
+                                GradientDrawable.Orientation.BL_TR,
+                                new int[]{
+                                        JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(0)),
+                                        JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(1)),
+                                });
+
+                    }
+
                     // Background Logic
                     if (bg != null) {
                         // sectionLayout must be transparent to see the background
@@ -1704,6 +1718,8 @@ public class JasonFragment extends Fragment {
                                     sectionLayout.setBackgroundColor(JasonHelper.parse_color(background));
                                     ((JasonViewActivity) context).getWindow().getDecorView().setBackgroundColor(JasonHelper.parse_color(background));
                                 }
+                            } else if (bg instanceof GradientDrawable) {
+                                sectionLayout.setBackground((Drawable) bg);
                             } else {
                                 JSONObject background = (JSONObject)bg;
                                 String type = background.getString("type");
@@ -1783,7 +1799,6 @@ public class JasonFragment extends Fragment {
 
                                         // header
                                         int toolbarHeight = 0;
-//                                        if (body.has("header")) { toolbarHeight = toolbar.getHeight(); }
 
                                         RelativeLayout.LayoutParams newrlp = new RelativeLayout.LayoutParams(
                                                 RelativeLayout.LayoutParams.MATCH_PARENT,
