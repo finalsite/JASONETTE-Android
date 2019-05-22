@@ -1012,11 +1012,15 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     private void onSwitchTab(String newUrl, String newParams, Intent intent) {
         FragmentManager fragmentManager = getSupportFragmentManager();
+        boolean needsResume = fragmentManager.getFragments().size() > MINIMUM_FRAGMENTS;
         while (fragmentManager.getFragments().size() > MINIMUM_FRAGMENTS) {
             List<Fragment> fragments = fragmentManager.getFragments();
             beginTransaction(fragmentManager, false).remove(fragments.get(fragments.size() - 1)).commitNow();
         }
         currentFragment().onSwitchTab(newUrl, newParams, intent);
+        if (needsResume) {
+            currentFragment().onResume();
+        }
         shouldDisplayHomeUp();
     }
 
