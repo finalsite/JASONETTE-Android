@@ -2,25 +2,23 @@ package com.jasonette.seed.Service.push;
 
 import android.util.Log;
 
+import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Launcher.Launcher;
-import com.urbanairship.push.fcm.AirshipFirebaseMessagingService;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Map;
 
-public class JasonPushMessageService extends AirshipFirebaseMessagingService {
+public class JasonPushMessageService extends FirebaseMessagingService {
 
     public JasonPushMessageService() {
     }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        AirshipFirebaseMessagingService.processMessageSync(this, remoteMessage);
-
         if (remoteMessage.getData().size() > 0) {
             Map<String, String> json = remoteMessage.getData();
             JSONObject payload = new JSONObject();

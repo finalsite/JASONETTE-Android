@@ -1,6 +1,5 @@
 package com.jasonette.seed.Launcher;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
@@ -23,12 +22,10 @@ import org.json.JSONTokener;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.urbanairship.UAirship;
 import okhttp3.OkHttpClient;
 import com.jasonette.seed.BuildConfig;
 import com.jasonette.seed.Service.agent.JasonAgentService;
@@ -119,7 +116,6 @@ public class Launcher extends Application {
     public void onCreate() {
         super.onCreate();
 
-        UAirship.shared().getPushManager().setUserNotificationsEnabled(true);
         ViewTarget.setTagId(R.id.glide_request);
 
         // Look for all extensions and initialize them if they have initialize class methods
