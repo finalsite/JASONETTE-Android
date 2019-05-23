@@ -31,6 +31,9 @@ import timber.log.Timber;
 
 public class JasonHelper {
 
+    public static int COLOR_BLACK = Color.parseColor("#000000");
+    public static int COLOR_WHITE = Color.parseColor("#ffffff");
+
     public static JSONObject style(JSONObject component, Context root_context) {
         JSONObject style = new JSONObject();
         JasonViewActivity activity = ((JasonViewActivity) root_context);

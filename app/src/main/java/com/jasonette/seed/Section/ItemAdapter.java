@@ -2,6 +2,7 @@ package com.jasonette.seed.Section;
 
 import android.content.Context;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -14,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -691,6 +693,53 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         } else {
                             layout.setGravity(Gravity.LEFT);
                         }
+                    }
+
+                    if (style.has("corner_radius") && !style.has("shadow_border")) {
+                        float corner = JasonHelper.pixels(root_context, style.getString("corner_radius"), "horizontal");
+                        int color = ContextCompat.getColor(root_context, android.R.color.transparent);
+                        GradientDrawable cornerShape = new GradientDrawable();
+                        cornerShape.setShape(GradientDrawable.RECTANGLE);
+                        if (style.has("background") && !style.getString("background").matches("(file|http[s]?):\\/\\/.*")) {
+                            color = JasonHelper.parse_color(style.getString("background"));
+                        }
+                        cornerShape.setColor(color);
+                        cornerShape.setCornerRadius(corner);
+
+                        // border + corner_radius handling
+                        if (style.has("border_width")){
+                            int border_width = (int)JasonHelper.pixels(root_context, style.getString("border_width"), "horizontal");
+                            if(border_width > 0){
+                                int border_color;
+                                if (style.has("border_color")){
+                                    border_color = JasonHelper.parse_color(style.getString("border_color"));
+                                } else {
+                                    border_color = JasonHelper.COLOR_BLACK;
+                                }
+                                cornerShape.setStroke(border_width, border_color);
+                            }
+                        }
+                        cornerShape.invalidateSelf();
+                        layout.setBackground(cornerShape);
+                        layout.setClipToOutline(true);
+                    } else {
+                        // border handling (no corner radius)
+                        if (style.has("border_width")){
+                            int border_width = (int)JasonHelper.pixels(root_context, style.getString("border_width"), "horizontal");
+                            if(border_width > 0){
+                                int border_color;
+                                if (style.has("border_color")){
+                                    border_color = JasonHelper.parse_color(style.getString("border_color"));
+                                } else {
+                                    border_color = JasonHelper.COLOR_BLACK;
+                                }
+                                GradientDrawable cornerShape = new GradientDrawable();
+                                cornerShape.setStroke(border_width, border_color);
+                                cornerShape.invalidateSelf();
+                                layout.setBackground(cornerShape);
+                            }
+                        }
+
                     }
 
 

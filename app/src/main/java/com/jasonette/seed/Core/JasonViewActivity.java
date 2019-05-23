@@ -1638,7 +1638,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         badge_style = new JSONObject();
                     }
 
-                    int color = JasonHelper.parse_color("#ffffff");
+                    int color = JasonHelper.COLOR_WHITE;
                     int background = JasonHelper.parse_color("#ff0000");
 
                     if(badge_style.has("color")) color = JasonHelper.parse_color(badge_style.getString("color"));
