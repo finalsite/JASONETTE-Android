@@ -14,6 +14,7 @@ import com.jasonette.seed.Core.JasonModel;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.R;
+import com.jasonette.seed.Lib.UserAgentInterceptor;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -22,10 +23,16 @@ import org.json.JSONTokener;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import com.jasonette.seed.BuildConfig;
 import com.jasonette.seed.Service.agent.JasonAgentService;
@@ -39,6 +46,38 @@ public class Launcher extends Application {
     private JSONObject models;
     public JSONObject services;
     private static Context currentContext;
+
+    private CookieJar cookieJar = new CookieJar() {
+        private List<Cookie> storage = new ArrayList<>();
+
+        @Override
+        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+            storage.addAll(cookies);
+        }
+
+        @Override
+        public List<Cookie> loadForRequest(HttpUrl url) {
+            // Remove expired Cookies
+            int i = 0;
+            while (i < storage.size()) {
+                Cookie cookie = storage.get(i);
+                if (cookie.expiresAt() < System.currentTimeMillis()) {
+                    storage.remove(i);
+                } else {
+                    i += 1;
+                }
+            }
+
+            // Only return matching Cookies
+            List<Cookie> ret = new ArrayList<>();
+            for (Cookie cookie : storage) {
+                if (cookie.matches(url)) {
+                    ret.add(cookie);
+                }
+            }
+            return ret;
+        }
+    };
 
     public void call(String serviceName, String methodName, JSONObject action, Context context) {
         try {
@@ -348,11 +387,18 @@ public class Launcher extends Application {
     public OkHttpClient getHttpClient(long timeout) {
         if(timeout > 0) {
             return new OkHttpClient.Builder()
+                    .cookieJar(cookieJar)
                     .writeTimeout(timeout, TimeUnit.SECONDS)
                     .readTimeout(timeout, TimeUnit.SECONDS)
+                    .addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3"))
                     .build();
+
         } else {
-            return new OkHttpClient.Builder().build();
+            return new OkHttpClient.Builder().cookieJar(cookieJar).addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3")).build();
         }
+    }
+
+    public CookieJar getCookieJar() {
+        return cookieJar;
     }
 }
