@@ -24,6 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -190,6 +191,7 @@ public class Launcher extends Application {
             device.put("height", height);
             device.put("density", displayMetrics.density);
             device.put("language", Locale.getDefault().toString());
+            device.put("tz", TimeZone.getDefault().getID());
 
             JSONObject os = new JSONObject();
             os.put("name", "android");
