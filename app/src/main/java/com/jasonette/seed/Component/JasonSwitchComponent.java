@@ -1,6 +1,7 @@
 package com.jasonette.seed.Component;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.util.Log;
@@ -65,30 +66,29 @@ public class JasonSwitchComponent {
     }
     public static void changeColor(Switch s, boolean isChecked, JSONObject style) {
         try {
+            int thumbColor;
+            int trackColor;
+
             if(isChecked) {
-                int color;
                 if (style.has("color")) {
-                    color = JasonHelper.parse_color(style.getString("color"));
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                        s.getThumbDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                        s.getTrackDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                    }
+                    thumbColor = JasonHelper.parse_color(style.getString("color"));
+                    trackColor = thumbColor;
                 } else {
-                    s.getThumbDrawable().clearColorFilter();
-                    s.getTrackDrawable().clearColorFilter();
+                    thumbColor = JasonHelper.parse_color("#009186");
+                    trackColor = thumbColor;
                 }
+                s.getThumbDrawable().setColorFilter(thumbColor, PorterDuff.Mode.MULTIPLY);
+                s.getTrackDrawable().setColorFilter(trackColor, PorterDuff.Mode.MULTIPLY);
             } else {
-                int color;
                 if (style.has("color:disabled")) {
-                    color = JasonHelper.parse_color(style.getString("color:disabled"));
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                        s.getThumbDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                        s.getTrackDrawable().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
-                    }
+                    thumbColor = JasonHelper.parse_color(style.getString("color:disabled"));
+                    trackColor = thumbColor;
                 } else {
-                    s.getThumbDrawable().clearColorFilter();
-                    s.getTrackDrawable().clearColorFilter();
+                    thumbColor = JasonHelper.parse_color("#EFEFEF");
+                    trackColor = Color.BLACK;
                 }
+                s.getThumbDrawable().setColorFilter(thumbColor, PorterDuff.Mode.MULTIPLY);
+                s.getTrackDrawable().setColorFilter(trackColor, PorterDuff.Mode.SRC_ATOP);
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
