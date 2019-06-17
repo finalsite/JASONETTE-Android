@@ -14,6 +14,12 @@ public class SplashActivity extends AppCompatActivity {
 
         // Create the new intent to open the first JasonViewActivity
         Intent intent = new Intent(SplashActivity.this, JasonViewActivity.class);
+
+        // Pass through action from push notification
+        if(getIntent().getExtras() != null && getIntent().getExtras().getString("action") != null) {
+            intent.putExtra("action", getIntent().getExtras().getString("action"));
+        }
+
         startActivity(intent);
         // close this activity
         finishAfterTransition();
