@@ -135,6 +135,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
         ((LinearLayout) findViewById(R.id.jason_header_container)).addView(toolbar);
         depth = getIntent().getIntExtra("depth", 0);
+
+        if(getIntent().getExtras() != null && getIntent().getExtras().getString("action") != null) {
+            call(getIntent().getExtras().getString("action"), "{}", "{}", this);
+        }
+
     }
 
     public void shouldDisplayHomeUp() {
