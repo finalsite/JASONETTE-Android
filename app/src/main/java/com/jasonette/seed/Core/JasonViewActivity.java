@@ -1025,6 +1025,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         currentFragment().onSwitchTab(newUrl, newParams, intent);
         if (needsResume) {
             currentFragment().onResume();
+        } else {
+            currentFragment().onShow();
         }
         shouldDisplayHomeUp();
     }

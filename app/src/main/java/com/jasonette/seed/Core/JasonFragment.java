@@ -485,9 +485,10 @@ public class JasonFragment extends Fragment {
 
         if (!firstResume) {
             JasonViewActivity currentView = (JasonViewActivity) context;
-            onShow();
             // update the view to be using the model for this fragment
             currentView.setModel(model);
+
+            onShow();
             // tell the view to setup it's header/options menu
             if (model.rendered != null && model.rendered.has("header")) {
                 currentView.onPrepareOptionsMenu(null);
