@@ -18,11 +18,16 @@ public class JasonTimedAction {
         try {
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
             TimeZone timeZone = TimeZone.getTimeZone(action.getJSONObject("options").getString("time_zone"));
+
             // Sets the time zone to be the same for the new date and the date we're parsing from our server
             format.setTimeZone(timeZone);
-            TimeZone.setDefault(timeZone);
 
+            // Get current time with same timezone
+            TimeZone defaultTimezone = timeZone.getDefault();
+            TimeZone.setDefault(timeZone);
             Date now = new Date();
+            TimeZone.setDefault(defaultTimezone);
+
             Date loadTime = format.parse(action.getJSONObject("options").getString("load_time"));
             // convert the frequency that we give in minutes to milliseconds since getTime returns milliseconds long
             Long frequency = Long.parseLong(action.getJSONObject("options").getString("frequency")) * 60000;
