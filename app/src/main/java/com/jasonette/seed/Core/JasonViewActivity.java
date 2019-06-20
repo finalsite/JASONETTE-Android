@@ -1,5 +1,7 @@
 package com.jasonette.seed.Core;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -16,6 +18,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -27,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.util.SparseArray;
@@ -34,10 +39,12 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.bumptech.glide.Glide;
@@ -1504,13 +1511,24 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 if (searchView == null) {
                     searchView = new SearchView(this);
                     searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+                    searchView.setIconifiedByDefault(false); // start it expanded;
 
-                    // put the search icon on the right hand side of the toolbar
-                    searchView.setLayoutParams(new Toolbar.LayoutParams(Gravity.RIGHT));
+                    LinearLayout linearLayoutOfSearchView = (LinearLayout) searchView.getChildAt(0);
+                    Button cancelButton = new Button(JasonViewActivity.this);
+                    cancelButton.setText("Cancel");
+                    cancelButton.setVisibility(View.GONE);
+                    cancelButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                           searchView.clearFocus();
+                        }
+                    });
+                    linearLayoutOfSearchView.addView(cancelButton);
 
-                    toolbar.addView(searchView);
+                    ((LinearLayout) findViewById(R.id.jason_header_container)).addView(searchView);
                 } else {
                     searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+                    searchView.setVisibility(View.VISIBLE);
                 }
 
                 // styling
@@ -1542,21 +1560,41 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     searchView.setQueryHint(search.getString("placeholder"));
                 }
 
+                searchView.setOnQueryTextFocusChangeListener(new SearchView.OnFocusChangeListener(){
+                    @Override
+                    public void onFocusChange(View v, boolean hasFocus) {
+                        Button cancelButton = (Button)((LinearLayout)searchView.getChildAt(0)).getChildAt(3);
+
+                        if(hasFocus) {
+                            cancelButton.setVisibility(View.VISIBLE);
+                        } else{
+                            cancelButton.setVisibility(View.GONE);
+                        }
+
+                    }
+                });
+
                 searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
+
+                    private void submitQuery(String s) {
+                        try {
+                            JSONObject kv = new JSONObject();
+                            kv.put(search.getString("name"), s);
+                            model.var = JasonHelper.merge(model.var, kv);
+                            if (search.has("action")) {
+                                call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                            }
+                            searchView.clearFocus();
+                        } catch (Exception e){
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                        }
+                    }
+
                     @Override
                     public boolean onQueryTextSubmit(String s) {
                         // name
                         if (search.has("name")) {
-                            try {
-                                JSONObject kv = new JSONObject();
-                                kv.put(search.getString("name"), s);
-                                model.var = JasonHelper.merge(model.var, kv);
-                                if (search.has("action")) {
-                                    call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                }
-                            } catch (Exception e){
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
+                            submitQuery(s);
                         }
                         return false;
                     }
@@ -1564,6 +1602,9 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     @Override
                     public boolean onQueryTextChange(String s) {
                         if (search.has("action")) {
+                            if (TextUtils.isEmpty(s)){
+                                submitQuery(s);
+                            }
                             return false;
                         } else if (listView != null) {
                             ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
@@ -1572,6 +1613,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         return true;
                     }
                 });
+            } else if (searchView !=null) {
+                searchView.setVisibility(View.GONE);
             }
 
 
