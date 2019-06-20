@@ -273,6 +273,7 @@ public class JasonModel{
                 } else {
                     if (jason.has("$jason")) {
                         view.loaded = false;
+                        view.currentFragment().loaded = false;
                         view.build(jason);
                     } else {
 
