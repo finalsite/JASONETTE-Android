@@ -3,6 +3,7 @@ package com.jasonette.seed.Action;
 import android.content.Context;
 
 import com.jasonette.seed.Core.JasonViewActivity;
+import com.jasonette.seed.Helper.JasonHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,6 +36,8 @@ public class JasonTimedAction {
             // If now - the loadTime of the page is > frequency converted to milliseconds then reload
             if (now.getTime() - loadTime.getTime() > frequency) {
                 ((JasonViewActivity) context).currentFragment().reload(action, data, event, context);
+            } else {
+                JasonHelper.next("success", new JSONObject(), data, event, context);
             }
         } catch (ParseException e) {
             e.printStackTrace();
