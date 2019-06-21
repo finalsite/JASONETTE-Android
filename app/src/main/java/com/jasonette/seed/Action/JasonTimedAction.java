@@ -37,7 +37,7 @@ public class JasonTimedAction {
             if (now.getTime() - loadTime.getTime() > frequency) {
                 ((JasonViewActivity) context).currentFragment().reload(action, data, event, context);
             } else {
-                JasonHelper.next("success", new JSONObject(), data, event, context);
+                JasonHelper.next("success", action, data, event, context);
             }
         } catch (ParseException e) {
             e.printStackTrace();
