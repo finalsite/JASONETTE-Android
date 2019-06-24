@@ -15,3 +15,12 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-assumenosideeffects class android.util.Log{
+  public staticbooleanisLoggable(java.lang.String,int);
+  public staticintv(...);
+  public staticinti(...);
+  public staticintw(...);
+  public staticint d(...);
+  public staticinte(...);
+}
