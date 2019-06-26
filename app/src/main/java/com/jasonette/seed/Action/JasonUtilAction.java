@@ -201,6 +201,10 @@ public class JasonUtilAction {
         }
     }
 
+    public void redirectToSettings(final JSONObject action, final JSONObject data, final JSONObject event, final Context context) {
+        context.startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+    }
+
     public void picker(final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override

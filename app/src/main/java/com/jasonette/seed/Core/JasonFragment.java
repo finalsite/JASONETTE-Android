@@ -485,9 +485,10 @@ public class JasonFragment extends Fragment {
 
         if (!firstResume) {
             JasonViewActivity currentView = (JasonViewActivity) context;
-            onShow();
             // update the view to be using the model for this fragment
             currentView.setModel(model);
+
+            onShow();
             // tell the view to setup it's header/options menu
             if (model.rendered != null && model.rendered.has("header")) {
                 currentView.onPrepareOptionsMenu(null);
@@ -655,7 +656,6 @@ public class JasonFragment extends Fragment {
 
     public void call(final String action_json, final String data_json, final String event_json, final Context context) {
         try {
-
             Object action = JasonHelper.objectify(action_json);
             final JSONObject data = (JSONObject)JasonHelper.objectify(data_json);
 
