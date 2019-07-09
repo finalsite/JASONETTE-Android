@@ -6,8 +6,8 @@ android {
         applicationId "com.finalsite.notificationproof"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 40500
-        versionName "4.5.0"
+        versionCode 40600
+        versionName "4.6.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
