@@ -1531,6 +1531,12 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 } else {
                     searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
                     searchView.setVisibility(View.VISIBLE);
+
+                    String current_query = "";
+                    if (search.has("name") && model.var.has(search.getString("name"))) {
+                        current_query = model.var.getString(search.getString("name"));
+                    }
+                    searchView.setQuery(current_query, false);
                 }
 
                 // styling
@@ -1603,16 +1609,20 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                     @Override
                     public boolean onQueryTextChange(String s) {
-                        if (search.has("action")) {
-                            if (TextUtils.isEmpty(s)){
-                                submitQuery(s);
+                        try {
+                            if (search.has("action")) {
+                                if (TextUtils.isEmpty(s) && !TextUtils.isEmpty(model.var.getString(search.getString("name"))) ){
+                                    submitQuery(s);
+                                }
+                                return false;
+                            } else if (listView != null) {
+                                ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
+                                adapter.filter(s);
                             }
+                            return true;
+                        } catch (Exception e){
                             return false;
-                        } else if (listView != null) {
-                            ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
-                            adapter.filter(s);
                         }
-                        return true;
                     }
                 });
             } else if (searchView !=null) {
