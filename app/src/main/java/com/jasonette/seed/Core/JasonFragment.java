@@ -139,6 +139,8 @@ public class JasonFragment extends Fragment {
         intent = getArguments().getParcelable("intent");
         requestCode = getArguments().getInt("return");
 
+        Launcher.setCurrentContext(context);
+
         // 1. Create root layout (Relative Layout)
         RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
