@@ -38,6 +38,7 @@ import android.widget.RelativeLayout;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.jasonette.seed.BuildConfig;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
@@ -1391,9 +1392,17 @@ public class JasonFragment extends Fragment {
         }
     }
 
+    public void back ( final JSONObject action, JSONObject data, JSONObject event, Context context) {
+        ((JasonViewActivity) context).back(action, data, event, context);
+    }
+
+    public void close ( final JSONObject action, JSONObject data, JSONObject event, Context context) {
+        ((JasonViewActivity) context).close(action, data, event, context);
+    }
+
     public void ok ( final JSONObject action, JSONObject data, JSONObject event, Context context){
         try {
-            ((JasonViewActivity) context).back(action, data, event, context);
+            back(action, data, event, context);
 
             // if we don't have a request code then there probably wasn't something expecting a return
             if (requestCode == 0) return;
@@ -1740,6 +1749,7 @@ public class JasonFragment extends Fragment {
                                     background.put("id", "$webcontainer@" + model.url);
                                     JasonAgentService agentService = (JasonAgentService)((Launcher) context.getApplicationContext()).services.get("JasonAgentService");
                                     backgroundWebview = agentService.setup((JasonViewActivity) context, background, "$webcontainer@" + model.url);
+                                    backgroundWebview.getSettings().setUserAgentString(backgroundWebview.getSettings().getUserAgentString().replace("; wv", "") + " Finalsite-App/" + BuildConfig.VERSION_NAME);
                                     backgroundWebview.setVisibility(View.VISIBLE);
                                     // not interactive by default;
                                     Boolean responds_to_webview = false;
