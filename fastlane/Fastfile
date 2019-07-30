@@ -22,7 +22,7 @@ platform :android do
     lane :prepare_for_deploy do
         gradle(
             print_command: false,
-            task: 'clean assembleDebug assembleAndroidTest bundleRelease'
+            task: 'clean cleanBuildCache assembleDebug assembleAndroidTest bundleRelease'
         )
         screengrab
         puts("\e[34mYour release apk has been generated and is located at: app/build/outputs/bundle/release/app.aab\e[0m")
