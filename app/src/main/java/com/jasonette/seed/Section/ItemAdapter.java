@@ -57,7 +57,6 @@ import java.util.Map;
 public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     public static final int DATA = 0;
 
-
     Context context;
     Context root_context;
     ArrayList<JSONObject> items;
@@ -101,9 +100,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 }
             } catch (Exception e){ }
         }
-
     }
-
 
     public ItemAdapter(Context root_context, Context context, ArrayList<JSONObject> items) {
         this.items = items;
@@ -167,7 +164,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             stringified_item = item.toString();
         }
 
-
         // Simplistic way of transforming an item JSON into a generic string, by replacing out all non-structural values
         // - replace out text and url
         String regex = "\"(url|text)\"[ ]*:[ ]*\"([^\"]+)\"";
@@ -196,7 +192,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             // Return the new index;
             return index;
         }
-
     }
 
     @Override
@@ -236,7 +231,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }
 
         return viewHolder;
-
     }
 
     @Override
@@ -332,9 +326,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }};
 
         public ItemAdapter.ViewHolder build(ViewHolder prototype, JSONObject json) {
-
             LinearLayout layout;
-
 
             if (prototype != null) {
                 // Fill
@@ -375,7 +367,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                 return viewHolder;
             }
-
         }
 
         // ContentView is the top level view of a cell.
@@ -391,7 +382,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                     } else {
                         // 1. Create components array
                         JSONArray components = new JSONArray();
-
 
                         // 2. Create a vertical layout and set its components
                         JSONObject wrapper = new JSONObject();
@@ -438,7 +428,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             ViewGroup.LayoutParams layoutParams = (ViewGroup.LayoutParams)layout.getLayoutParams();
                             layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
                         }
-
                     }
                 } else {
                     layout = new LinearLayout(context);
@@ -448,7 +437,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             }
 
             return layout;
-
         }
 
         class BackgroundImage extends SimpleTarget<Drawable> {
@@ -533,7 +521,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 canvas.drawBitmap(source, null, targetRect, null);
 
                 return dest;
-
             }
         }
 
@@ -739,12 +726,9 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                 layout.setBackground(cornerShape);
                             }
                         }
-
                     }
 
-
                     layout.requestLayout();
-
                 } catch (JSONException e) {
 
                 }
@@ -753,7 +737,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }
 
         public View buildComponent(JSONObject component, JSONObject parent) {
-
             View view;
 
             JSONObject style = JasonHelper.style(component, root_context);
@@ -768,13 +751,10 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 this.subviews.add(view);
                 return view;
             }
-
-
         }
 
         // handle adding or removing click handlers on recycled nested layouts
         private void attach_layout_actions(View view, JSONObject item) {
-
             // allow nested layouts to handle actions
             if (item.has("action") || item.has("href")) {
                 view.setClickable(true);
@@ -802,7 +782,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 view.setOnClickListener(null);
                 view.setClickable(false);
             }
-
         }
 
         private void add_spacing(View view, JSONObject item, String type) {
@@ -843,7 +822,5 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
         }
-
     }
-
 }

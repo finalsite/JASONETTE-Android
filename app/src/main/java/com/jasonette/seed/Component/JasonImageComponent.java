@@ -6,17 +6,17 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import androidx.core.graphics.drawable.DrawableCompat;
-import androidx.core.graphics.drawable.RoundedBitmapDrawable;
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -95,23 +95,18 @@ public class JasonImageComponent {
             .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
             .into((ImageView)view);
     }
-    private static void rounded(JSONObject component, View view, final float corner_radius_float, final Context context){
+    private static void rounded(JSONObject component, View view, final int corner_radius, final boolean center_crop, final Context context){
         Object new_url = JasonImageComponent.resolve_url(component, context);
         try {
-            Glide
-                .with(context)
-                .asBitmap()
-                .load(new_url)
-                .fitCenter()
-                .into(new BitmapImageViewTarget((ImageView)view) {
-                    @Override
-                    protected void setResource(Bitmap res) {
-                        RoundedBitmapDrawable bitmapDrawable =
-                                RoundedBitmapDrawableFactory.create(context.getResources(), res);
-                        bitmapDrawable.setCornerRadius(corner_radius_float);
-                        view.setImageDrawable(bitmapDrawable);
-                    }
-                });
+            RequestBuilder<Drawable> glide_chain = Glide
+                    .with(context)
+                    .load(new_url)
+                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                    .transform(new RoundedCorners(corner_radius));
+            if (center_crop) {
+                glide_chain = glide_chain.centerCrop();
+            }
+            glide_chain.into((ImageView) view);
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
@@ -190,7 +185,7 @@ public class JasonImageComponent {
 
             int width = 0;
             int height = 0;
-            float corner_radius = 0;
+            int corner_radius = 0;
             try {
                 String type = component.getString("type");;
                 final JSONObject style = JasonHelper.style(component, context);
@@ -199,66 +194,34 @@ public class JasonImageComponent {
                     style.remove("corner_radius");
                 }
                 if (style.has("corner_radius")) {
-                    corner_radius = JasonHelper.pixels(context, style.getString("corner_radius"), "horizontal");
+                    corner_radius = (int) JasonHelper.pixels(context, style.getString("corner_radius"), "horizontal");
                 }
                 if (component.has("url")) {
-                    if(component.getString("url").contains("file://")){
-                        if (corner_radius == 0) {
-                            try {
-                                if (component.getString("url").matches(".*\\.gif")) {
-                                    JasonImageComponent.gif(component, view, context);
+                    if (corner_radius == 0) {
+                        try {
+                            if (component.getString("url").matches(".*\\.gif")) {
+                                JasonImageComponent.gif(component, view, context);
+                            } else {
+                                if(style.has("color")){
+                                    JasonImageComponent.tinted(component, style, view, context);
                                 } else {
-                                    if(style.has("color")){
-                                        JasonImageComponent.tinted(component, style, view, context);
-                                    } else {
-                                        JasonImageComponent.normal(component, view, context);
-                                    }
+                                    JasonImageComponent.normal(component, view, context);
                                 }
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                             }
-                        } else {
-                            final float corner_radius_float = (float)corner_radius;
-                            try {
-                                JasonImageComponent.rounded(component, view, corner_radius_float, context);
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
-
-                        JasonComponent.addListener(view, context);
-                        view.requestLayout();
-                        return view;
-
                     } else {
-                        if (corner_radius == 0) {
-                            try {
-                                if (component.getString("url").matches(".*\\.gif")) {
-                                    JasonImageComponent.gif(component, view, context);
-                                } else {
-                                    if(style.has("color")){
-                                        JasonImageComponent.tinted(component, style, view, context);
-                                    } else {
-                                        JasonImageComponent.normal(component, view, context);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
-                        } else {
-                            final float corner_radius_float = (float)corner_radius;
-                            try {
-                                JasonImageComponent.rounded(component, view, corner_radius_float, context);
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
+                        try {
+                            boolean center_crop = style.has("center_crop");
+                            JasonImageComponent.rounded(component, view, corner_radius, center_crop, context);
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
-
-                        JasonComponent.addListener(view, context);
-                        view.requestLayout();
-                        return view;
-
                     }
+                    JasonComponent.addListener(view, context);
+                    view.requestLayout();
+                    return view;
 
                 } else {
                     return new View(context);

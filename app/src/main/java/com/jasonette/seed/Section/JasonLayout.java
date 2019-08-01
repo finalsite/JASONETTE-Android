@@ -124,6 +124,24 @@ public class JasonLayout {
                 }
             }
 
+            if (style.has("max_width")) {
+                float max_width = JasonHelper.pixels(root_context, style.getString("max_width"), "horizontal");
+                if (width > max_width && height > 0) {
+                    float ratioMult = max_width / width;
+                    width = max_width;
+                    height = height * ratioMult;
+                }
+            }
+
+            if (style.has("max_height")) {
+                float max_height = JasonHelper.pixels(root_context, style.getString("max_height"), "vertical");
+                if (height > max_height && width > 0) {
+                    float ratioMult = max_height / height;
+                    height = max_height;
+                    width = width * ratioMult;
+                }
+            }
+
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams((int)width, (int)height);
             if (style.has("weight")) {
                 weight = style.getInt("weight");

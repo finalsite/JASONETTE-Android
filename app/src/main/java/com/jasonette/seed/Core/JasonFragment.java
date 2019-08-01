@@ -169,7 +169,6 @@ public class JasonFragment extends Fragment {
         // 4.1. RecyclerView
         listView = new RecyclerView(context);
         listView.setItemViewCacheSize(20);
-        listView.setDrawingCacheEnabled(true);
         listView.setHasFixedSize(true);
 
         // Create adapter passing in the sample user data
