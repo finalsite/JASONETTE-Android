@@ -17,11 +17,11 @@ android {
         }
     }
 
-    def isAutoSigning = new File("../config/keys/keystore.properties").exists()
+    def isAutoSigning = file("../../fastlane/keys/keystore.properties").exists()
 
     if (isAutoSigning) {
         Properties props = new Properties()
-        props.load(new FileInputStream(file("../../config/keys/keystore.properties")))
+        props.load(new FileInputStream(file("../../fastlane/keys/keystore.properties")))
 
         signingConfigs {
             release {
