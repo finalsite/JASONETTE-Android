@@ -183,7 +183,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     private FragmentTransaction beginTransaction(FragmentManager fragmentManager, boolean animate) {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        if (animate) {
+        if (animate && getSupportFragmentManager().getFragments().size() > 0) { // don't animate if there's no fragments
             fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_right);
         }
         return fragmentTransaction;
