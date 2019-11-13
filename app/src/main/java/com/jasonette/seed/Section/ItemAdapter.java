@@ -5,6 +5,7 @@ import android.content.Context;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSnapHelper;
 import androidx.recyclerview.widget.PagerSnapHelper;
@@ -16,10 +17,13 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
@@ -729,6 +733,48 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                     }
 
                     layout.requestLayout();
+
+                    // accessibility
+
+                    if(item.has("alt")) {
+                        String content_description = item.getString("alt");
+
+                        if(item.has("label")) {
+                            content_description = item.getString("label").concat(", ").concat(content_description);
+                        }
+
+                        if (content_description.length() == 0) {
+                            content_description = null;
+                            layout.setFocusable(false);
+                        } else {
+                            layout.setFocusable(true);
+                        }
+                        layout.setContentDescription(content_description);
+                    }
+
+                    if (Build.VERSION.SDK_INT >= 14) {
+                        final String role = item.has("role") ? item.getString("role") : "";
+                        final Boolean hasAction = !item.has("action") && !item.has("href");
+
+                        layout.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                            public void onInitializeAccessibilityNodeInfo(View host,
+                                                                          AccessibilityNodeInfo info) {
+                                super.onInitializeAccessibilityNodeInfo(host, info);
+                                // Set some other information.
+                                info.setSelected(role.contains("selected"));
+                                info.setClickable(role.contains("button"));
+                                info.setCheckable(role.contains("checkbox"));
+                                info.setChecked(role.contains("checked"));
+
+                                // if there is no action remove the default action that indicates there is one
+                                if (hasAction) {
+                                    info.getActionList().removeAll(info.getActionList());
+                                }
+                            }
+                        });
+                    }
+
+
                 } catch (JSONException e) {
 
                 }

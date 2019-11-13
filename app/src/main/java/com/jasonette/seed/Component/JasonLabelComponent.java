@@ -29,6 +29,10 @@ public class JasonLabelComponent {
                     ((TextView)view).setTextColor(color);
                 }
 
+                if (component.has("label")) {
+                    view.setContentDescription(component.getString("label").concat(", ").concat(component.getString("text")));
+                }
+
                 JasonHelper.setTextViewFont(((TextView)view), style, context);
 
                 int g = 0;
