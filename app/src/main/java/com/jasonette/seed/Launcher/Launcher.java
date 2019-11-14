@@ -363,7 +363,7 @@ public class Launcher extends Application {
                     .build();
 
         } else {
-            return new OkHttpClient.Builder().cookieJar(cookieJar).addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3")).build();
+            return new OkHttpClient.Builder().cookieJar(getCookieJar()).addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3")).build();
         }
     }
 
