@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import androidx.core.content.ContextCompat;
 
-import android.os.Build;
 import android.util.Log;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -177,27 +176,25 @@ public class JasonComponent {
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= 14) {
-                final String role = component.has("role") ? component.getString("role") : "";
-                final Boolean hasAction = !component.has("action") && !component.has("href");
+            final String role = component.has("role") ? component.getString("role") : "";
+            final Boolean hasAction = !component.has("action") && !component.has("href");
 
-                view.setAccessibilityDelegate(new View.AccessibilityDelegate() {
-                    public void onInitializeAccessibilityNodeInfo(View host,
-                                                                  AccessibilityNodeInfo info) {
-                        super.onInitializeAccessibilityNodeInfo(host, info);
-                        // Set some other information.
-                        info.setSelected(role.contains("selected"));
-                        info.setClickable(role.contains("button"));
-                        info.setCheckable(role.contains("checkbox"));
-                        info.setChecked(role.contains("checked"));
+            view.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                public void onInitializeAccessibilityNodeInfo(View host,
+                                                              AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(host, info);
+                    // Set some other information.
+                    info.setSelected(role.contains("selected"));
+                    info.setClickable(role.contains("button"));
+                    info.setCheckable(role.contains("checkbox"));
+                    info.setChecked(role.contains("checked"));
 
-                        // if there is no action remove the default action that indicates there is one
-                        if (hasAction) {
-                            info.getActionList().removeAll(info.getActionList());
-                        }
+                    // if there is no action remove the default action that indicates there is one
+                    if (hasAction) {
+                        info.getActionList().removeAll(info.getActionList());
                     }
-                });
-            }
+                }
+            });
 
             return view;
 
