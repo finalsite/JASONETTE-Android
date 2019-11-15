@@ -748,6 +748,13 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         layout.setContentDescription(content_description);
                     }
 
+                    if(item.has("hide_accessible_children")) {
+                        for (int i = 0; i < layout.getChildCount(); i++) {
+                            View v = layout.getChildAt(i);
+                            v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+                        }
+                    }
+
                     final String role = item.has("role") ? item.getString("role") : "";
                     final Boolean hasAction = !item.has("action") && !item.has("href");
 
