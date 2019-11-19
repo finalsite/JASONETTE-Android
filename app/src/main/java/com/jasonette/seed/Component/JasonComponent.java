@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import androidx.core.content.ContextCompat;
 
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -188,6 +189,9 @@ public class JasonComponent {
                     info.setClickable(role.contains("button"));
                     info.setCheckable(role.contains("checkbox"));
                     info.setChecked(role.contains("checked"));
+                    if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        info.setHeading(role.contains("header"));
+                    }
 
                     // if there is no action remove the default action that indicates there is one
                     if (hasAction) {

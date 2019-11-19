@@ -1825,12 +1825,7 @@ public class JasonFragment extends Fragment {
 
                                     @Override
                                     public void onGlobalLayout() {
-                                        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                            rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                                        }
-                                        else {
-                                            rootLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                                        }
+                                        rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
                                         // header
                                         int toolbarHeight = 0;

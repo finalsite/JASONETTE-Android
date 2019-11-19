@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -767,6 +768,10 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             info.setClickable(role.contains("button"));
                             info.setCheckable(role.contains("checkbox"));
                             info.setChecked(role.contains("checked"));
+                            if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.setHeading(role.contains("header"));
+                            }
+
 
                             // if there is no action remove the default action that indicates there is one
                             if (hasAction) {
