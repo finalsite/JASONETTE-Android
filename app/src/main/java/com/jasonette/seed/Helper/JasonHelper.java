@@ -43,14 +43,6 @@ public class JasonHelper {
                 String[] style_classes = style_class_string.split("\\s+");
                 for(int i = 0 ; i < style_classes.length ; i++){
 
-                    // if we can't find the style it may not have been loaded yet, merge in what's available and we'll check again
-                    if (!activity.stylesheet.has(style_classes[i])) {
-                        JSONObject head = activity.model.jason.getJSONObject("$jason").getJSONObject("head");
-                        if (head.has("styles")) {
-                            activity.stylesheet.merge(head.getJSONObject("styles"));
-                        }
-                    }
-
                     if (activity.stylesheet.has(style_classes[i])) {
                         JSONObject astyle = activity.stylesheet.getJSONObject(style_classes[i]);
                         Iterator iterator = astyle.keys();

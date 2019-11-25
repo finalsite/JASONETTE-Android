@@ -1546,6 +1546,13 @@ public class JasonFragment extends Fragment {
         if(jason != null) {
             try {
 
+                try {
+                    JasonViewActivity activity = (JasonViewActivity) getActivity();
+                    JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
+                    if (head.has("styles")) {
+                        activity.stylesheet.merge(head.getJSONObject("styles"));
+                    }
+                } catch (Exception e) { }
                 if (jason.getJSONObject("$jason").has("body")) {
                     final JSONObject body;
                     body = jason.getJSONObject("$jason").getJSONObject("body");
