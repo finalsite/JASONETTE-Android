@@ -733,6 +733,8 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                     // accessibility
 
+
+                    layout.setFocusable(false);
                     if(item.has("alt")) {
                         String content_description = item.getString("alt");
 
@@ -742,7 +744,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                         if (content_description.length() == 0) {
                             content_description = null;
-                            layout.setFocusable(false);
                         } else {
                             layout.setFocusable(true);
                         }
