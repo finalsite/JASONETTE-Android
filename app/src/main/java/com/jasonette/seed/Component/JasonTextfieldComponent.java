@@ -110,6 +110,10 @@ public class JasonTextfieldComponent {
                     ((EditText)view).setHint(component.getString("placeholder"));
                 }
 
+                if(component.has("focus")) {
+                    ((EditText)view).requestFocus();
+                }
+
                 // default value
                 if(component.has("value")){
                     ((EditText)view).setText(component.getString("value"));
@@ -130,6 +134,20 @@ public class JasonTextfieldComponent {
                         ((EditText) view).setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
                     } else if(keyboard.equalsIgnoreCase("email")) {
                         ((EditText) view).setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+                    }
+                }
+
+                // keyboard return key
+                if(component.has("return_key")) {
+                    String return_key = component.getString("return_key");
+                    if (return_key.equalsIgnoreCase("go")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_GO);
+                    } else if(return_key.equalsIgnoreCase("next")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_NEXT);
+                    } else if(return_key.equalsIgnoreCase("search")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+                    } else {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_DONE);
                     }
                 }
 
@@ -167,10 +185,15 @@ public class JasonTextfieldComponent {
                 ((EditText)view).setOnEditorActionListener(new TextView.OnEditorActionListener() {
                     @Override
                     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                        if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_SEARCH) {
                             try {
                                 if(component.has("name")) {
                                     ((JasonViewActivity) context).model.var.put(component.getString("name"), v.getText().toString());
+                                }
+                                if(component.has("action")) {
+                                    Intent intent = new Intent("call");
+                                    intent.putExtra("action", component.getJSONObject("action").toString());
+                                    LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
                                 }
                             } catch (Exception e){
                                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
