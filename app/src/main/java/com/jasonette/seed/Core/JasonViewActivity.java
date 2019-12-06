@@ -1761,6 +1761,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             // Default title values
             toolbar.setTitle("");
             toolbar.setTitleSize(20);
+            toolbar.setContentDescription(null);
 
             // Global font
             if (header.has("style")) {
@@ -1836,6 +1837,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                 }
                             }
                         }
+
+                        if (t.has("alt")) {
+                            toolbar.setContentDescription(t.getString("alt") + ", Header");
+                        }
+
                         toolbar.setImageHeight(height);
                         toolbar.setImageWidth(width);
                         toolbar.setImage(c);

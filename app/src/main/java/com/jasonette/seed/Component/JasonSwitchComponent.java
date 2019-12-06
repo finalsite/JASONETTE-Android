@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -35,6 +36,11 @@ public class JasonSwitchComponent {
                     }
                 }
                 final JSONObject style = JasonHelper.style(component, context);
+
+                if(component.has("label")) {
+                    aSwitch.setText(component.getString("label"));
+                    aSwitch.setGravity(Gravity.LEFT);
+                }
                 aSwitch.setChecked(checked);
                 aSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
