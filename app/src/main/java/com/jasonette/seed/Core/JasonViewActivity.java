@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -39,6 +40,7 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -1514,6 +1516,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     searchView = new SearchView(this);
                     searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
                     searchView.setIconifiedByDefault(false); // start it expanded;
+                    searchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+                    searchView.setInputType(InputType.TYPE_CLASS_TEXT);
 
                     LinearLayout linearLayoutOfSearchView = (LinearLayout) searchView.getChildAt(0);
                     Button cancelButton = new Button(JasonViewActivity.this);

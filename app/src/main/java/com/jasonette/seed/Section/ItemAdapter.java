@@ -758,7 +758,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                     }
 
                     final String role = item.has("role") ? item.getString("role") : "";
-                    final Boolean hasAction = !item.has("action") && !item.has("href");
+                    final Boolean hasAction = item.has("action") || item.has("href");
 
                     layout.setAccessibilityDelegate(new View.AccessibilityDelegate() {
                         public void onInitializeAccessibilityNodeInfo(View host,
@@ -773,9 +773,8 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                                 info.setHeading(role.contains("header"));
                             }
 
-
                             // if there is no action remove the default action that indicates there is one
-                            if (hasAction) {
+                            if (!hasAction) {
                                 info.getActionList().removeAll(info.getActionList());
                             }
                         }
