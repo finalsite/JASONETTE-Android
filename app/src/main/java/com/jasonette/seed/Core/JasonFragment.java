@@ -1,5 +1,6 @@
 package com.jasonette.seed.Core;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +29,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -412,6 +414,14 @@ public class JasonFragment extends Fragment {
 
     @Override
     public void onPause() {
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                rootLayout.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            }
+        });
+
         // Unregister since the activity is paused.
         LocalBroadcastManager.getInstance(context).unregisterReceiver(onSuccess);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(onError);
@@ -449,6 +459,13 @@ public class JasonFragment extends Fragment {
 
     @Override
     public void onResume() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                rootLayout.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            }
+        });
+
         // Register to receive messages.
         // We are registering an observer (mMessageReceiver) to receive Intents
         // with actions named "custom-event-name".
@@ -1815,12 +1832,7 @@ public class JasonFragment extends Fragment {
 
                                     @Override
                                     public void onGlobalLayout() {
-                                        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                            rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                                        }
-                                        else {
-                                            rootLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                                        }
+                                        rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
                                         // header
                                         int toolbarHeight = 0;
