@@ -55,6 +55,7 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
+import com.jasonette.seed.Launcher.Launcher;
 import com.jasonette.seed.Service.vision.JasonVisionService;
 import com.jasonette.seed.Lib.JasonToolbar;
 import com.jasonette.seed.Lib.MaterialBadgeTextView;
@@ -236,6 +237,15 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     public JasonModel setModel(JasonModel m) {
         model = m;
+
+        try {
+            JSONObject v = new JSONObject();
+            v.put("url", m.url);
+            ((Launcher)(this.getApplicationContext())).setEnv("view", v);
+        } catch (Exception e) {
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        }
+
         return model;
     }
 
