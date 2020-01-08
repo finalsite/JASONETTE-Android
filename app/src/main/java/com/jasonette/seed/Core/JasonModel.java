@@ -185,7 +185,11 @@ public class JasonModel{
                         if (self.onError != null) {
                             self.view.handleErrorCallback();;
                         } else {
-                            fetch_local("file://error.json");
+                            if (isOnline()) {
+                                fetch_local("file://error.json");
+                            } else {
+                                fetch_local("file://offline.json");
+                            }
                         }
                     }
                     self.view.hideProgressBar();
@@ -199,7 +203,11 @@ public class JasonModel{
                             if (self.onError != null) {
                                 self.view.handleErrorCallback();
                             } else {
-                                fetch_local("file://error.json");
+                                if (isOnline()) {
+                                    fetch_local("file://error.json");
+                                } else {
+                                    fetch_local("file://offline.json");
+                                }
                             }
                         }
                     } else if (self.view.model.url.equalsIgnoreCase(call.request().url().toString())){
@@ -213,6 +221,19 @@ public class JasonModel{
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
+    }
+
+    public boolean isOnline() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        }
+        catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+
+        return false;
     }
 
     private void include(String res){
