@@ -2,6 +2,7 @@ package com.jasonette.seed.Core;
 
 
 import android.app.Activity;
+import android.app.Instrumentation;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -18,9 +19,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import androidx.test.espresso.ViewInteraction;
+import androidx.test.espresso.NoMatchingViewException;
+import androidx.test.espresso.intent.rule.IntentsTestRule;
 import androidx.test.filters.LargeTest;
-import androidx.test.rule.ActivityTestRule;
 import tools.fastlane.screengrab.Screengrab;
 import tools.fastlane.screengrab.UiAutomatorScreenshotStrategy;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -33,9 +34,12 @@ import tools.fastlane.screengrab.locale.LocaleTestRule;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.intent.Intents.intending;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.isInternal;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.not;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
@@ -45,12 +49,16 @@ public class FinalsiteUITest {
     public static final LocaleTestRule localeTestRule = new LocaleTestRule();
 
     @Rule
-    public ActivityTestRule<SplashActivity> mActivityTestRule = new ActivityTestRule<>(SplashActivity.class);
+    public IntentsTestRule<SplashActivity> mActivity = new IntentsTestRule<>(SplashActivity.class);
 
     @Before
     public void init() throws Throwable {
+
+        // cancel any external intents that might bring us out of the app (ie externally linked tabs)
+        intending(not(isInternal())).respondWith(new Instrumentation.ActivityResult(Activity.RESULT_OK, null));
+
         Screengrab.setDefaultScreenshotStrategy(new UiAutomatorScreenshotStrategy());
-        mActivityTestRule.runOnUiThread(new Runnable() {
+        mActivity.runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
@@ -65,57 +73,26 @@ public class FinalsiteUITest {
         appSleep(4000);
         Screengrab.screenshot("01HomeScreen");
 
-        ViewInteraction frameLayout2 = onView(
-                allOf(withId(R.id.bottom_navigation_container),
-                        childAtPosition(
+        for(int i = 1; i < 5; i++) {
+            try {
+                onView(
+                        allOf(withId(R.id.bottom_navigation_container),
                                 childAtPosition(
-                                        withId(R.id.jason_bottom_navigation),
-                                        1),
-                                1),
-                        isDisplayed()));
-        frameLayout2.perform(click());
+                                        childAtPosition(
+                                                withId(R.id.jason_bottom_navigation),
+                                                1),
+                                        i),
+                                isDisplayed())
+                        )
+                        .perform(click());
 
-        appSleep(4000);
-        Screengrab.screenshot("02TabScreen");
-
-        ViewInteraction frameLayout3 = onView(
-                allOf(withId(R.id.bottom_navigation_container),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(R.id.jason_bottom_navigation),
-                                        1),
-                                2),
-                        isDisplayed()));
-        frameLayout3.perform(click());
-
-        appSleep(4000);
-        Screengrab.screenshot("03TabScreen");
-
-        ViewInteraction frameLayout4 = onView(
-                allOf(withId(R.id.bottom_navigation_container),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(R.id.jason_bottom_navigation),
-                                        1),
-                                3),
-                        isDisplayed()));
-        frameLayout4.perform(click());
-
-        appSleep(4000);
-        Screengrab.screenshot("04TabScreen");
-
-        ViewInteraction frameLayout5 = onView(
-                allOf(withId(R.id.bottom_navigation_container),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(R.id.jason_bottom_navigation),
-                                        1),
-                                4),
-                        isDisplayed()));
-        frameLayout5.perform(click());
-
-        appSleep(4000);
-        Screengrab.screenshot("05TabScreen");
+                appSleep(4000);
+                Screengrab.screenshot("0" + (i + 1) + "TabScreen");
+            }
+            catch(NoMatchingViewException e) {
+                // all tabs may or may not exist depending on client setup
+            }
+        }
     }
 
     private static Matcher<View> childAtPosition(
