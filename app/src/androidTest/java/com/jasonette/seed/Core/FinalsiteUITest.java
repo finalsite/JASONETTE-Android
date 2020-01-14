@@ -1,16 +1,18 @@
 package com.jasonette.seed.Core;
 
 
+import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import com.jasonette.seed.Launcher.DebugLauncher;
 import com.jasonette.seed.R;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,9 +22,13 @@ import androidx.test.espresso.ViewInteraction;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import tools.fastlane.screengrab.Screengrab;
-import tools.fastlane.screengrab.ScreenshotCallback;
 import tools.fastlane.screengrab.UiAutomatorScreenshotStrategy;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
+
+import java.util.ArrayList;
+
 import tools.fastlane.screengrab.locale.LocaleTestRule;
 
 import static androidx.test.espresso.Espresso.onView;
@@ -41,13 +47,21 @@ public class FinalsiteUITest {
     @Rule
     public ActivityTestRule<SplashActivity> mActivityTestRule = new ActivityTestRule<>(SplashActivity.class);
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void init() throws Throwable {
         Screengrab.setDefaultScreenshotStrategy(new UiAutomatorScreenshotStrategy());
+        mActivityTestRule.runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                ArrayList<Activity> activities = (ArrayList<Activity>) ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED);
+                ((DebugLauncher) activities.get(0).getApplicationContext()).setGlobal("locations", "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20");
+            }
+        });
     }
 
     @Test
-    public void ScreenshotTest() {
+    public void ScreenshotTest(){
         appSleep(4000);
         Screengrab.screenshot("01HomeScreen");
 
