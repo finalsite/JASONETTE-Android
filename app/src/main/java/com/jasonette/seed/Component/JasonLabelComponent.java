@@ -2,6 +2,7 @@ package com.jasonette.seed.Component;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -26,6 +27,10 @@ public class JasonLabelComponent {
                 if (style.has("color")) {
                     int color = JasonHelper.parse_color(style.getString("color"));
                     ((TextView)view).setTextColor(color);
+                }
+
+                if (component.has("label")) {
+                    view.setContentDescription(component.getString("label").concat(", ").concat(component.getString("text")));
                 }
 
                 JasonHelper.setTextViewFont(((TextView)view), style, context);
@@ -55,6 +60,12 @@ public class JasonLabelComponent {
                 }
 
                 ((TextView)view).setGravity(g);
+
+                if (component.has("line_limit")) {
+                    ((TextView) view).setSingleLine(false);
+                    ((TextView) view).setEllipsize(TextUtils.TruncateAt.END);
+                    ((TextView) view).setMaxLines(component.getInt("line_limit"));
+                }
 
 
                 if (style.has("size")) {

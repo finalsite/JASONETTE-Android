@@ -1,6 +1,5 @@
 package com.jasonette.seed.Launcher;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
@@ -11,10 +10,14 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.bumptech.glide.request.target.ViewTarget;
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.jasonette.seed.Core.JasonModel;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.R;
+import com.jasonette.seed.Lib.UserAgentInterceptor;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -23,11 +26,12 @@ import org.json.JSONTokener;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.CookieJar;
 import okhttp3.OkHttpClient;
 import com.jasonette.seed.BuildConfig;
 import com.jasonette.seed.Service.agent.JasonAgentService;
@@ -41,6 +45,7 @@ public class Launcher extends Application {
     private JSONObject models;
     public JSONObject services;
     private static Context currentContext;
+    private CookieJar cookieJar;
 
     public void call(String serviceName, String methodName, JSONObject action, Context context) {
         try {
@@ -60,6 +65,9 @@ public class Launcher extends Application {
         currentContext = context;
     }
 
+    public void clearTabModels() {
+        this.models = new JSONObject();
+    }
     public void setTabModel(String url, JasonModel model) {
        try {
             models.put(url, model);
@@ -167,6 +175,8 @@ public class Launcher extends Application {
                             this.global.put(entry.getKey(), new JSONObject(val));
                         } else if (json instanceof JSONArray) {
                             this.global.put(entry.getKey(), new JSONArray(val));
+                        } else {
+                            this.global.put(entry.getKey(), val);
                         }
                     } catch (Exception e){
                         Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -185,7 +195,9 @@ public class Launcher extends Application {
             float height = displayMetrics.heightPixels / displayMetrics.density;
             device.put("width", width);
             device.put("height", height);
+            device.put("density", displayMetrics.density);
             device.put("language", Locale.getDefault().toString());
+            device.put("tz", TimeZone.getDefault().getID());
 
             JSONObject os = new JSONObject();
             os.put("name", "android");
@@ -344,11 +356,21 @@ public class Launcher extends Application {
     public OkHttpClient getHttpClient(long timeout) {
         if(timeout > 0) {
             return new OkHttpClient.Builder()
+                    .cookieJar(getCookieJar())
                     .writeTimeout(timeout, TimeUnit.SECONDS)
                     .readTimeout(timeout, TimeUnit.SECONDS)
+                    .addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3"))
                     .build();
+
         } else {
-            return new OkHttpClient.Builder().build();
+            return new OkHttpClient.Builder().cookieJar(getCookieJar()).addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3")).build();
         }
+    }
+
+    public CookieJar getCookieJar() {
+        if (cookieJar == null) {
+            cookieJar = new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(getCurrentContext()));
+        }
+        return cookieJar;
     }
 }

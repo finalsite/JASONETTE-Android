@@ -1,65 +1,66 @@
 package com.jasonette.seed.Core;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.SearchManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
-import android.support.v7.widget.Toolbar;
+
+import androidx.appcompat.widget.LinearLayoutCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
+
+import android.text.InputType;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebView;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Launcher.Launcher;
-import com.jasonette.seed.Service.agent.JasonAgentService;
 import com.jasonette.seed.Service.vision.JasonVisionService;
 import com.jasonette.seed.Lib.JasonToolbar;
 import com.jasonette.seed.Lib.MaterialBadgeTextView;
 import com.jasonette.seed.R;
 import com.jasonette.seed.Section.ItemAdapter;
-import com.yqritc.recyclerviewflexibledivider.HorizontalDividerItemDecoration;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -72,56 +73,40 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.bumptech.glide.Glide.with;
+import static java.lang.Integer.parseInt;
 
-public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
+public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     private JasonToolbar toolbar;
     private RecyclerView listView;
     public String url;
     public JasonModel model;
     public JSONObject preload;
-    private ProgressBar loading;
     public Integer depth;
+    public JasonStylesheet stylesheet;
+    private static Integer MINIMUM_FRAGMENTS = 2;
 
-    private ArrayList<RecyclerView.OnItemTouchListener> listViewOnItemTouchListeners;
-
-    private boolean firstResume = true;
     public boolean loaded;
-    private boolean fetched;
     private boolean resumed;
 
     private int header_height;
     private ImageView logoView;
-    private ArrayList<JSONObject> section_items;
-    private HashMap<Integer, AHBottomNavigationItem> bottomNavigationItems;
+    private SparseArray<AHBottomNavigationItem> bottomNavigationItems;
     public HashMap<String, Object> modules;
-    private SwipeRefreshLayout swipeLayout;
-    public LinearLayout sectionLayout;
-    public RelativeLayout rootLayout;
-    private ItemAdapter adapter;
-    public View backgroundCurrentView;
-    public WebView backgroundWebview;
-    public ImageView backgroundImageView;
-    private SurfaceView backgroundCameraView;
     public JasonVisionService cameraManager;
     private AHBottomNavigation bottomNavigation;
     private LinearLayout footerInput;
     private View footer_input_textfield;
     private SearchView searchView;
-    private HorizontalDividerItemDecoration divider;
-    private String previous_background;
-    private JSONObject launch_action;
     private ArrayList<JSONObject> event_queue;
-    ArrayList<View> layer_items;
 
     public View focusView = null;
 
-    Parcelable listState;
-    JSONObject intent_to_resolve;
     public JSONObject agents = new JSONObject();
     private boolean isexecuting = false;
 
@@ -130,8 +115,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
      * JASON ACTIVITY LIFECYCLE MANAGEMENT
      *
      ************************************************************/
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,526 +127,134 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         // Initialize Parser instance
         JasonParser.getInstance(this);
 
-        listViewOnItemTouchListeners = new ArrayList<RecyclerView.OnItemTouchListener>();
+        stylesheet = new JasonStylesheet();
 
-        layer_items = new ArrayList<View>();
         // Setup Layouts
+        setContentView(R.layout.jason_view_activity_layout);
 
         // 1. Create root layout (Relative Layout)
-        RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT,
-                RelativeLayout.LayoutParams.MATCH_PARENT);
-        if(rootLayout == null) {
-            // Create the root layout
-            rootLayout = new RelativeLayout(JasonViewActivity.this);
-            rootLayout.setLayoutParams(rlp);
-            rootLayout.setFitsSystemWindows(true);
-        }
-
-
-        // 2. Add Swipe layout
-        if(swipeLayout == null) {
-            swipeLayout = new SwipeRefreshLayout(JasonViewActivity.this);
-            swipeLayout.setLayoutParams(rlp);
-            rootLayout.addView(swipeLayout);
-        }
+        dispatchFragment(getIntent(), false);
 
         // 3. Create body.header
-        if(toolbar == null) {
+        if (toolbar == null) {
             toolbar = new JasonToolbar(this);
             setSupportActionBar(toolbar);
             getSupportActionBar().setTitle("");
         } else {
             setSupportActionBar(toolbar);
         }
+        ((LinearLayout) findViewById(R.id.jason_header_container)).addView(toolbar);
+        depth = getIntent().getIntExtra("depth", 0);
 
-        // 4. Create body.sections
-
-        // 4.1. RecyclerView
-        listView = new RecyclerView(this);
-        listView.setItemViewCacheSize(20);
-        listView.setDrawingCacheEnabled(true);
-        listView.setHasFixedSize(true);
-
-        // Create adapter passing in the sample user data
-        adapter = new ItemAdapter(this, this, new ArrayList<JSONObject>());
-        // Attach the adapter to the recyclerview to populate items
-        listView.setAdapter(adapter);
-        // Set layout manager to position the items
-        listView.setLayoutManager(new LinearLayoutManager(this));
-
-        // 4.2. LinearLayout
-        if(sectionLayout == null){
-            // Create LinearLayout
-            sectionLayout = new LinearLayout(JasonViewActivity.this);
-            sectionLayout.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            sectionLayout.setLayoutParams(p);
-
-            // Add toolbar to LinearLayout
-            if(toolbar!=null) sectionLayout.addView(toolbar);
-
-            // Add RecyclerView to LinearLayout
-            if(listView!=null) sectionLayout.addView(listView);
-
-            // Add LinearLayout to Swipe Layout
-            swipeLayout.addView(sectionLayout);
+        if(getIntent().getExtras() != null && getIntent().getExtras().getString("action") != null) {
+            call(getIntent().getExtras().getString("action"), "{}", "{}", this);
         }
 
-        // 5. Start Loading
-        RelativeLayout.LayoutParams loadingLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        loadingLayoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        loading = new ProgressBar(this);
-        loading.setLayoutParams(loadingLayoutParams);
-        loading.setVisibility(View.INVISIBLE);
-        rootLayout.addView(loading);
+    }
 
-        // 6. set root layout as content
-        setContentView(rootLayout);
+    public void shouldDisplayHomeUp() {
+        if (getSupportActionBar() != null) {
+            runOnUiThread(new Runnable() {
 
-        firstResume = true;
-
-        modules = new HashMap<String, Object>();
-
-        // Parsing Intent
-        Intent intent = getIntent();
-
-        // Launch Action Payload Handling.
-        // We will store this and queue it up at onLoad() after the first action call chain has finished
-        // And then execute it on "unlock" of that call chain
-        launch_action = null;
-        if (intent.hasExtra("href")) {
-            try {
-                JSONObject href = new JSONObject(intent.getStringExtra("href"));
-                launch_action = new JSONObject();
-                launch_action.put("type", "$href");
-                launch_action.put("options", href);
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        } else if (intent.hasExtra("action")) {
-            try {
-                launch_action = new JSONObject(intent.getStringExtra("action"));
-            } catch (Exception e) {
-            }
-        }
-
-        if(intent.hasExtra("url")){
-            url = intent.getStringExtra("url");
-        } else {
-            url = getString(R.string.url);
-        }
-        depth = intent.getIntExtra("depth", 0);
-        preload = null;
-        if (intent.hasExtra("preload")) {
-            try {
-                preload = new JSONObject(intent.getStringExtra("preload"));
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                preload = null;
-            }
-        } else {
-            if (intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
-                // first time launch
-                String launch_url = getString(R.string.launch);
-                if (launch_url != null && launch_url.length() > 0) {
-                    // if preload is specified, use that url
-                    preload = (JSONObject)JasonHelper.read_json(launch_url, JasonViewActivity.this);
-                } else {
-                    preload = null;
+                @Override
+                public void run() {
+                    getSupportActionBar().setDisplayHomeAsUpEnabled(getSupportFragmentManager().getFragments().size() > MINIMUM_FRAGMENTS);
                 }
-            }
-        }
-
-        // Create model
-        model = new JasonModel(url, intent, this);
-
-        Uri uri = getIntent().getData();
-        if(uri != null && uri.getHost().contains("oauth")) {
-            loaded = true; // in case of oauth process we need to set loaded to true since we know it's already been loaded.
-            return;
-        }
-
-        if(savedInstanceState != null) {
-            // Restore model and url
-            // Then rebuild the view
-            try {
-                url = savedInstanceState.getString("url");
-                model.url = url;
-                if(savedInstanceState.getString("jason")!=null) model.jason = new JSONObject(savedInstanceState.getString("jason"));
-                if(savedInstanceState.getString("rendered")!=null) model.rendered = new JSONObject(savedInstanceState.getString("rendered"));
-                if(savedInstanceState.getString("state")!=null) model.state = new JSONObject(savedInstanceState.getString("state"));
-                if(savedInstanceState.getString("var")!=null) model.var = new JSONObject(savedInstanceState.getString("var"));
-                if(savedInstanceState.getString("cache")!=null) model.cache = new JSONObject(savedInstanceState.getString("cache"));
-                if(savedInstanceState.getString("params")!=null) model.params = new JSONObject(savedInstanceState.getString("params"));
-                if(savedInstanceState.getString("session")!=null) model.session = new JSONObject(savedInstanceState.getString("session"));
-
-                listState = savedInstanceState.getParcelable("listState");
-
-                setup_body(model.rendered);
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        } else {
-            onRefresh();
-        }
-
-    }
-    private void setup_agents() {
-        try {
-            JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-            if (head.has("agents")) {
-                final JSONObject agents = head.getJSONObject("agents");
-                Iterator<String> iterator = agents.keys();
-                while (iterator.hasNext()) {
-                    final String key = iterator.next();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                JasonAgentService agentService = (JasonAgentService) ((Launcher) getApplicationContext()).services.get("JasonAgentService");
-                                WebView agent = agentService.setup(JasonViewActivity.this, agents.getJSONObject(key), key);
-                            } catch (JSONException e) {
-                            }
-                        }
-                    });
-                }
-            }
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+            });
         }
     }
-
-    private void clear_agents() {
-        try {
-            JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-            final JSONObject agents = head.getJSONObject("agents");
-            Iterator<String> iterator = agents.keys();
-            while (iterator.hasNext()) {
-                final String key = iterator.next();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            JasonAgentService agentService = (JasonAgentService) ((Launcher) getApplicationContext()).services.get("JasonAgentService");
-                            JSONObject clearAction = new JSONObject();
-                            JSONObject options = new JSONObject();
-                            options.put("id", key);
-                            clearAction.put("options", options);
-                            agentService.clear(clearAction, JasonViewActivity.this);
-                        } catch (JSONException e) {
-                        }
-                    }
-                });
-            }
-        } catch (Exception e) {
-
-        }
-    }
-
-    private void onRefresh() {
-        // offline: true logic
-        // 1. check if the url + params signature exists
-        // 2. if it does, use that to construct the model and setup_body
-        // 3. Go on to fetching (it will be re-rendered if fetch is successful)
-
-        // reset "offline mode"
-        model.offline = false;
-
-        // Reset local variables when reloading
-        model.var = new JSONObject();
-
-        SharedPreferences pref = getSharedPreferences("offline", 0);
-        String signature = model.url + model.params.toString();
-        if(pref.contains(signature)){
-            String offline = pref.getString(signature, null);
-            try {
-                JSONObject offline_cache = new JSONObject(offline);
-                model.jason = offline_cache.getJSONObject("jason");
-                model.rendered = offline_cache.getJSONObject("rendered");
-                model.offline = true;   // we confirm that this model is offline so it shouldn't trigger error.json when network fails
-                setup_body(model.rendered);
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        } else {
-            if (preload != null) {
-                setup_body(preload);
-            }
-        }
-
-        // Fetch
-        model.fetch();
-
-    }
-
-    private void onSwitchTab(String newUrl, String newParams, Intent intent) {
-        // if tab transition, restore from stored tab using this.build()
-        try {
-            // remove all touch listeners before replacing
-            // Use case : Tab bar
-            removeListViewOnItemTouchListeners();
-            // Store the current model
-            ((Launcher)getApplicationContext()).setTabModel(model.url+model.params, model);
-
-            // clear agents
-            clear_agents();;
-
-            // Retrieve the new view's model
-            JasonModel m = ((Launcher)getApplicationContext()).getTabModel(newUrl + newParams);
-
-            if (m == null) {
-                // refresh
-                removeListViewOnItemTouchListeners();
-                model = new JasonModel(newUrl, intent, this);
-                onRefresh();
-            } else {
-                // build
-                model = m;
-                setup_agents();
-                setup_body(m.rendered);
-            }
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-    }
-
 
     @Override
-    protected void onPause() {
-        // Unregister since the activity is paused.
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(onSuccess);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(onError);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(onCall);
+    public void onBackPressed() {
+        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
 
-        // Clear agents
-        clear_agents();
-
-
-
-        // Store model to shared preference
-        SharedPreferences pref = getSharedPreferences("model", 0);
-        SharedPreferences.Editor editor = pref.edit();
-
-        JSONObject temp_model = new JSONObject();
-        try {
-            if (model.url != null) temp_model.put("url", model.url);
-            if (model.jason != null) temp_model.put("jason", model.jason);
-            if (model.rendered != null) temp_model.put("rendered", model.rendered);
-            if (model.state != null) temp_model.put("state", model.state);
-            if (model.var != null) temp_model.put("var", model.var);
-            if (model.cache != null) temp_model.put("cache", model.cache);
-            if (model.params != null) temp_model.put("params", model.params);
-            if (model.session != null) temp_model.put("session", model.session);
-            if (model.action != null) temp_model.put("action", model.action);
-            temp_model.put("depth", depth);
-            if (model.url!= null){
-                editor.putString(model.url, temp_model.toString());
-                editor.commit();
-            }
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if (fragmentManager.getFragments().size() == MINIMUM_FRAGMENTS) {
+            finish();
+        } else {
+           popTopFragment(fragmentManager);
         }
+    }
 
-        super.onPause();
+    @Override
+    public boolean onSupportNavigateUp() {
+        hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
+
+        popTopFragment(getSupportFragmentManager());
+        return true;
+    }
+
+    private FragmentTransaction beginTransaction(FragmentManager fragmentManager, boolean animate) {
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        if (animate && getSupportFragmentManager().getFragments().size() > 0) { // don't animate if there's no fragments
+            fragmentTransaction.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_right);
+        }
+        return fragmentTransaction;
+    }
+
+    private void popTopFragment(FragmentManager fragmentManager) {
+        // Remove the top fragment on the stack
+        beginTransaction(fragmentManager, true).remove(currentFragment()).commitNow();
+
+        // Because the view activity will still have a fragment we should call onResume on it
+        currentFragment().onResume();
+
+        shouldDisplayHomeUp();
+    }
+
+    public FrameLayout getFragmentContainer(){
+        return findViewById(R.id.jason_fragment_container);
+    }
+
+    public JasonFragment currentFragment() {
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        try {
+            return (JasonFragment) fragments.get(fragments.size() - 1);
+        } catch (Exception e) {
+            // This sometimes fails because of a glide fragment being in the stack. controlling where it is in the stack
+            // is not reliable so instead we are trying to skip it on failed fragment JasonFragment casting
+            if (fragments.size() > 1) {
+                return (JasonFragment) fragments.get(fragments.size() - 2);
+            }
+        }
+        return null;
+    }
+
+    public HashMap<String, Object> createModules() {
+        modules = new HashMap<String, Object>();
+        return modules;
     }
 
     @Override
     protected void onResume() {
-        // Register to receive messages.
-        // We are registering an observer (mMessageReceiver) to receive Intents
-        // with actions named "custom-event-name".
-        Launcher.setCurrentContext(this);
+        super.onResume();
+    }
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(onSuccess, new IntentFilter("success"));
-        LocalBroadcastManager.getInstance(this).registerReceiver(onError, new IntentFilter("error"));
-        LocalBroadcastManager.getInstance(this).registerReceiver(onCall, new IntentFilter("call"));
+    public JasonModel createModel(String url, Intent intent) {
+        model = new JasonModel(url, intent, this);
+        return model;
+    }
 
-        resumed = true;
+    public JasonModel setModel(JasonModel m) {
+        model = m;
 
-        SharedPreferences pref = getSharedPreferences("model", 0);
-        if(model.url!=null && pref.contains(model.url)) {
-            String str = pref.getString(model.url, null);
-            try {
-                JSONObject temp_model = new JSONObject(str);
-                if(temp_model.has("url")) model.url = temp_model.getString("url");
-                if(temp_model.has("jason")) model.jason = temp_model.getJSONObject("jason");
-                if(temp_model.has("rendered")) model.rendered = temp_model.getJSONObject("rendered");
-                if(temp_model.has("state")) model.state = temp_model.getJSONObject("state");
-                if(temp_model.has("var")) model.var = temp_model.getJSONObject("var");
-                if(temp_model.has("cache")) model.cache = temp_model.getJSONObject("cache");
-                if (temp_model.getInt("depth") == depth) {
-                    if(temp_model.has("params")) model.params = temp_model.getJSONObject("params");
-                }
-                if(temp_model.has("session")) model.session = temp_model.getJSONObject("session");
-                if(temp_model.has("action")) model.action = temp_model.getJSONObject("action");
-
-                // Delete shared preference after resuming
-                SharedPreferences.Editor editor = pref.edit();
-                editor.remove(model.url);
-                editor.commit();
-
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-
-        if (!firstResume) {
-            onShow();
-        }
-        firstResume = false;
-
-        Uri uri = getIntent().getData();
-        if(uri != null && uri.getHost().contains("oauth")) {
-            try {
-                intent_to_resolve = new JSONObject();
-                intent_to_resolve.put("type", "success");
-                intent_to_resolve.put("name", "oauth");
-                intent_to_resolve.put("intent", getIntent());
-            } catch (JSONException e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-
-        // Intent Handler
-        // This part is for handling return values from external Intents triggered
-        // We set "intent_to_resolve" from onActivityResult() below, and then process it here.
-        // It's because onCall/onSuccess/onError callbacks are not yet attached when onActivityResult() is called.
-        // Need to wait till this point.
         try {
-            if(intent_to_resolve != null) {
-                if(intent_to_resolve.has("type")){
-                    ((Launcher)getApplicationContext()).trigger(intent_to_resolve, JasonViewActivity.this);
-                    intent_to_resolve = null;
-                }
-            }
+            JSONObject v = new JSONObject();
+            v.put("url", m.url);
+            ((Launcher)(this.getApplicationContext())).setEnv("view", v);
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
 
-        super.onResume();
-
-        if (listState != null) {
-            listView.getLayoutManager().onRestoreInstanceState(listState);
-        }
-
+        return model;
     }
-
 
     // This gets executed automatically when an external intent returns with result
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        try {
-            // We can't process the intent here because
-            // we need to wait until onResume gets triggered (which comes after this callback)
-            // onResume reattaches all the onCall/onSuccess/onError callbacks to the current Activity
-            // so we need to wait until that happens.
-            // Therefore here we only set the "intent_to_resolve", and the actual processing is
-            // carried out inside onResume()
-
-            intent_to_resolve = new JSONObject();
-            if(resultCode == RESULT_OK) {
-                intent_to_resolve.put("type", "success");
-                intent_to_resolve.put("name", requestCode);
-                intent_to_resolve.put("intent", intent);
-            } else {
-                intent_to_resolve.put("type", "error");
-                intent_to_resolve.put("name", requestCode);
-            }
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-
+        // We want to have the currentFragment handle the intent_to_resolve logic for it's onResume function.
+        currentFragment().onActivityResult(requestCode, resultCode, intent);
     }
-
-
-    @Override
-    protected void onSaveInstanceState(Bundle savedInstanceState) {
-        if(model.url!=null) savedInstanceState.putString("url", model.url.toString());
-        if(model.jason!=null) savedInstanceState.putString("jason", model.jason.toString());
-        if(model.rendered!=null) savedInstanceState.putString("rendered", model.rendered.toString());
-        if(model.state!=null) savedInstanceState.putString("state", model.state.toString());
-        if(model.var!=null) savedInstanceState.putString("var", model.var.toString());
-        if(model.cache!=null) savedInstanceState.putString("cache", model.cache.toString());
-        if(model.params!=null) savedInstanceState.putString("params", model.params.toString());
-        if(model.session!=null) savedInstanceState.putString("session", model.session.toString());
-        if(model.action!=null) savedInstanceState.putString("action", model.action.toString());
-
-        // Store RecyclerView state
-        listState = listView.getLayoutManager().onSaveInstanceState();
-        savedInstanceState.putParcelable("listState", listState);
-
-        super.onSaveInstanceState(savedInstanceState);
-    }
-
-
-    /*************************************************************
-
-     ## Event Handlers Rule ver2.
-
-     1. When there's only $show handler
-     - $show: Handles both initial load and subsequent show events
-
-     2. When there's only $load handler
-     - $load: Handles Only the initial load event
-
-     3. When there are both $show and $load handlers
-     - $load : handle initial load only
-     - $show : handle subsequent show events only
-
-
-     ## Summary
-
-     $load:
-     - triggered when view loads for the first time.
-     $show:
-     - triggered at load time + subsequent show events (IF $load handler doesn't exist)
-     - NOT triggered at load time BUT ONLY at subsequent show events (IF $load handler exists)
-
-
-     *************************************************************/
-    void onShow(){
-        loaded = true;
-        try {
-            JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-            JSONObject events = head.getJSONObject("actions");
-            simple_trigger("$show", new JSONObject(), this);
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-    }
-    void onLoad(){
-        loaded = true;
-        simple_trigger("$load", new JSONObject(), this);
-        try {
-            JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-            JSONObject events = head.getJSONObject("actions");
-            if(events!=null && events.has("$load")){
-                // nothing
-            } else {
-                onShow();
-            }
-
-            if (launch_action != null) {
-                JSONObject copy = new JSONObject(launch_action.toString());
-                launch_action = null;
-                if (head.has("actions")) {
-                    model.jason.getJSONObject("$jason").getJSONObject("head").getJSONObject("actions").put("$launch", copy);
-                } else {
-                    JSONObject actions = new JSONObject();
-                    actions.put("$launch", copy);
-                    model.jason.getJSONObject("$jason").getJSONObject("head").put("actions", actions);
-                }
-                simple_trigger("$launch", new JSONObject(), JasonViewActivity.this);
-            }
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-    }
-    void onForeground(){
-        // Not implemented yet
-    }
-
 
     /*************************************************************
      *
@@ -679,11 +270,9 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     //
     // 3. Only then, we actually make the invocation.
 
-
     //public void call(final Object action, final JSONObject data, final Context context) {
     public void call(final String action_json, final String data_json, final String event_json, final Context context) {
         try {
-
             Object action = JasonHelper.objectify(action_json);
             final JSONObject data = (JSONObject)JasonHelper.objectify(data_json);
 
@@ -699,15 +288,14 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
             if (action instanceof JSONArray) {
                 // resolve
-                JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject reduced_action) {
                         final_call(reduced_action, data, event, context);
                     }
-                });
+                };
 
-                JasonParser.getInstance(this).parse("json", model.state, action, context);
-
+                JasonParser.getInstance(this).parse("json", model.state, action, listener, context);
             } else {
                 final_call((JSONObject)action, data, event, context);
             }
@@ -727,31 +315,25 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             // Handle trigger first
             if (action.has("trigger")) {
                 trigger(action, data, event, context);
-            } else {
-                if(action.length() == 0){
-                    return;
-                }
-                // If not trigger, regular call
-                if(action.has("options")){
-                    // if action has options, we need to parse out the options first
-                    Object options = action.get("options");
-                    JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
-                        @Override
-                        public void onFinished(JSONObject parsed_options) {
-                            try {
-                                JSONObject action_with_parsed_options = new JSONObject(action.toString());
-                                action_with_parsed_options.put("options", parsed_options);
-                                exec(action_with_parsed_options, model.state, event, context);
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                            }
+            } else if (action.has("options")) {
+                // if action has options, we need to parse out the options first
+                Object options = action.get("options");
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
+                    @Override
+                    public void onFinished(JSONObject parsed_options) {
+                        try {
+                            JSONObject action_with_parsed_options = new JSONObject(action.toString());
+                            action_with_parsed_options.put("options", parsed_options);
+                            exec(action_with_parsed_options, model.state, event, context);
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
-                    });
-                    JasonParser.getInstance(this).parse("json", model.state, options, context);
-                } else {
-                    // otherwise we can just call immediately
-                    exec(action, model.state, event, context);
-                }
+                    }
+                };
+                JasonParser.getInstance(this).parse("json", model.state, options, listener, context);
+            } else if (action.length() > 0) {
+                // otherwise we can just call immediately
+                exec(action, model.state, event, context);
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -817,14 +399,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
          ****************************************************************************************/
 
-
         try {
-
             // construct options
-
-            if(action.has("options")) {
+            if (action.has("options")) {
                 Object options = action.get("options");
-                JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
@@ -833,23 +412,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(this).parse("json", model.state, options, context);
+                };
+                JasonParser.getInstance(this).parse("json", model.state, options, listener, context);
             } else {
-                JSONObject options = new JSONObject();
                 invoke_lambda(action, data, null, context);
             }
-
-
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
 
-
-
     }
-    private void invoke_lambda(final JSONObject action, final JSONObject data, final JSONObject options, final Context context) {
 
+    private void invoke_lambda(final JSONObject action, final JSONObject data, final JSONObject options, final Context context) {
         try {
             // construct lambda
             JSONObject lambda = new JSONObject();
@@ -857,15 +431,15 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
             JSONObject args = new JSONObject();
             args.put("name", action.getString("trigger"));
-            if(options!=null) {
+            if (options!=null) {
                 args.put("options", options);
             }
             lambda.put("options", args);
 
-            if(action.has("success")) {
+            if (action.has("success")) {
                 lambda.put("success", action.get("success"));
             }
-            if(action.has("error")) {
+            if (action.has("error")) {
                 lambda.put("error", action.get("error"));
             }
 
@@ -873,12 +447,10 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
-
     }
 
     public void simple_trigger(final String event_name, JSONObject data, Context context){
         try{
-
             if ((isexecuting || !resumed) && event_queue.size() > 0) {
                 JSONObject event_store = new JSONObject();
                 event_store.put("event_name", event_name);
@@ -921,7 +493,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 } else {
 
                     className = type.substring(1, type.lastIndexOf('.'));
-
 
                     // Resolve classname by looking up the json files
                     String resolved_classname = null;
@@ -969,14 +540,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     model.action = action;
                     method.invoke(module, action, model.state, event, context);
                 }
-
-
             }
         } catch (Exception e){
             // Action doesn't exist yet
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             try {
-
                 JSONObject alert_action = new JSONObject();
                 alert_action.put("type", "$util.banner");
 
@@ -987,99 +555,12 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                 alert_action.put("options", options);
 
-
                 call(alert_action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-
             } catch (Exception e2){
                 Log.d("Warning", e2.getStackTrace()[0].getMethodName() + " : " + e2.toString());
             }
         }
     }
-
-
-    // Our handler for received Intents. This will be called whenever an Intent
-    // with an action named "custom-event-name" is broadcasted.
-    public BroadcastReceiver onSuccess = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            try {
-                String action_string = intent.getStringExtra("action");
-                String data_string = intent.getStringExtra("data");
-                String event_string = intent.getStringExtra("event");
-
-                // Wrap return value with $jason
-                JSONObject data = addToObject("$jason", data_string);
-
-                // call next
-                call(action_string, data.toString(), event_string, JasonViewActivity.this);
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-    };
-    public BroadcastReceiver onError = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            try {
-                String action_string = intent.getStringExtra("action");
-                String data_string = intent.getStringExtra("data");
-                String event_string = intent.getStringExtra("event");
-
-                // Wrap return value with $jason
-                JSONObject data = addToObject("$jason", data_string);
-
-                // call next
-                call(action_string, data.toString(), event_string, JasonViewActivity.this);
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-    };
-
-    public BroadcastReceiver onCall = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            try {
-                String action_string = intent.getStringExtra("action");
-                String event_string = intent.getStringExtra("event");
-                String data_string = intent.getStringExtra("data");
-                if(data_string == null){
-                    data_string = new JSONObject().toString();
-                }
-
-                // Wrap return value with $jason
-                JSONObject data = addToObject("$jason", data_string);
-
-                // call next
-                call(action_string, data.toString(), event_string, JasonViewActivity.this);
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-    };
-
-    private JSONObject addToObject(String prop, String json_data) {
-        JSONObject data = new JSONObject();
-        try {
-            // Detect if the result is JSONObject, JSONArray, or String
-            if(json_data.trim().startsWith("[")) {
-                // JSONArray
-                data = new JSONObject().put("$jason", new JSONArray(json_data));
-            } else if(json_data.trim().startsWith("{")){
-                // JSONObject
-                data = new JSONObject().put("$jason", new JSONObject(json_data));
-            } else {
-                // String
-                data = new JSONObject().put("$jason", json_data);
-            }
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-        return data;
-    }
-
-
 
     /*************************************************************
      *
@@ -1087,15 +568,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
      *
      ************************************************************/
 
-
     /**
      * Renders a template using data
      * @param {String} template_name - the name of the template to render
      * @param {JSONObject} data - the data object to render
      */
 
-    public void lambda(final JSONObject action, JSONObject data, JSONObject event, Context context){
-
+    public void lambda(final JSONObject action, JSONObject data, JSONObject event, Context context) {
         /*
 
         # Similar to `trigger` keyword, but with a few differences:
@@ -1117,7 +596,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             }
         }
 
-
         # Example 2: Basic lambda with success/error handlers
         {
             "type": "$lambda",
@@ -1134,7 +612,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 }
             }
         }
-
 
         # Example 3: Passing arguments
         {
@@ -1261,9 +738,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 // 2. If `options` exists, use that as the data to pass to the next action
                 if(options.has("options")){
                     Object new_options = options.get("options");
-
-                    // take the options and parse it with current model.state
-                    JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
+                    JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                         @Override
                         public void onFinished(JSONObject parsed_options) {
                             try {
@@ -1274,8 +749,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                 JasonHelper.next("error", action, new JSONObject(), new JSONObject(), JasonViewActivity.this);
                             }
                         }
-                    });
-                    JasonParser.getInstance(this).parse("json", model.state, new_options, context);
+                    };
+                    JasonParser.getInstance(this).parse("json", model.state, new_options, listener, context);
 
                 }
 
@@ -1288,12 +763,10 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             JasonHelper.next("error", action, new JSONObject(), new JSONObject(), JasonViewActivity.this);
         }
-
     }
 
     public void require(final JSONObject action, JSONObject data, final JSONObject event, final Context context){
         /*
-
          {
             "type": "$require",
             "options": {
@@ -1303,7 +776,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
          }
 
          Crawl all the items in the array and assign it to the key
-
          */
 
         try {
@@ -1329,7 +801,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         }
                     }
                 }
-                if(urlSet.size()>0) {
+                if (urlSet.size()>0) {
                     JSONObject refs = new JSONObject();
 
                     CountDownLatch latch = new CountDownLatch(urlSet.size());
@@ -1349,14 +821,14 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     while (ks.hasNext()) {
                         String key = (String) ks.next();
                         Object val = options.get(key);
-                        if(val instanceof JSONArray){
+                        if (val instanceof JSONArray) {
                             JSONArray ret = new JSONArray();
                             for (int i = 0; i < ((JSONArray)val).length(); i++) {
                                 String url = ((JSONArray) val).getString(i);
                                 ret.put(refs.get(url));
                             }
                             res.put(key, ret);
-                        } else if(val instanceof String){
+                        } else if (val instanceof String) {
                             res.put(key, refs.get((String)val));
                         }
                     }
@@ -1371,52 +843,9 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
 
         // get all urls
-
     }
 
-    public void render(final JSONObject action, JSONObject data, final JSONObject event, final Context context){
-        JasonViewActivity activity = (JasonViewActivity) context;
-        try{
-            String template_name = "body";
-            String type = "json";
-
-            if(action.has("options")){
-                JSONObject options = action.getJSONObject("options");
-                if(options.has("template")){
-                    template_name = options.getString("template");
-                }
-                // parse the template with JSON
-                if(options.has("data")){
-                    data.put("$jason", options.get("data"));
-                }
-
-
-                if(options.has("type")){
-                    type = options.getString("type");
-                }
-            }
-
-            JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-            JSONObject templates = head.getJSONObject("templates");
-
-            JSONObject template = templates.getJSONObject(template_name);
-            JasonParser.getInstance(this).setParserListener(new JasonParser.JasonParserListener() {
-                @Override
-                public void onFinished(JSONObject body) {
-
-                    setup_body(body);
-                    JasonHelper.next("success", action, new JSONObject(), event, context);
-                }
-            });
-
-            JasonParser.getInstance(this).parse(type, data, template, context);
-
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            JasonHelper.next("error", action, new JSONObject(), event, context);
-        }
-    }
-    public void set(final JSONObject action, JSONObject data, JSONObject event, Context context){
+    public void set(final JSONObject action, JSONObject data, JSONObject event, Context context) {
         try{
             if(action.has("options")){
                 JSONObject options = action.getJSONObject("options");
@@ -1429,21 +858,47 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
     }
 
-    public void href(final JSONObject action, JSONObject data, JSONObject event, Context context){
+    public void handleErrorCallback() {
+        if (model.onError != null) {
+            exec(model.onError, model.state, null, this);
+        }
+    }
+
+    public void hideProgressBar() {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                findViewById(R.id.jason_loading_fragment_container).setVisibility(View.GONE);
+            }
+        });
+    }
+
+    public void showProgressBar() {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                findViewById(R.id.jason_loading_fragment_container).setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    public void href(final JSONObject action, JSONObject data, JSONObject event, Context context) {
         try {
             if (action.has("options")) {
+                JSONObject action_options = action.getJSONObject("options");
                 isexecuting = false;
                 resumed = false;
                 String url = action.getJSONObject("options").getString("url");
                 String transition = "push";
-                if(action.getJSONObject("options").has("transition")){
-                    transition = action.getJSONObject("options").getString("transition");
+                if(action_options.has("transition")){
+                    transition = action_options.getString("transition");
                 }
-
                 // "view": "web"
-                if (action.getJSONObject("options").has("view")) {
-                    String view_type = action.getJSONObject("options").getString("view");
-                    if(view_type.equalsIgnoreCase("web") || view_type.equalsIgnoreCase("app")){
+                if (action_options.has("view")) {
+                    String view_type = action_options.getString("view");
+                    if (view_type.equalsIgnoreCase("web") || view_type.equalsIgnoreCase("app")) {
                         try {
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             intent.setData(Uri.parse(url));
@@ -1456,14 +911,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     }
                 }
 
-
                 // "view": "jason" (default)
                 // Set params for the next view (use either 'options' or 'params')
                 String params = null;
-                if(action.getJSONObject("options").has("options")){
-                    params = action.getJSONObject("options").getJSONObject("options").toString();
-                } else if (action.getJSONObject("options").has("params")) {
-                    params = action.getJSONObject("options").getJSONObject("params").toString();
+                if (action_options.has("options")){
+                    params = action_options.getJSONObject("options").toString();
+                } else if (action_options.has("params")) {
+                    params = action_options.getJSONObject("params").toString();
                 }
 
                 // Reset SharedPreferences so it doesn't overwrite the model onResume
@@ -1472,13 +926,19 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 editor.remove(url);
                 editor.commit();
 
-                if(transition.equalsIgnoreCase("switchtab")) {
-                    if (action.getJSONObject("options").has("preload")) {
-                        preload = action.getJSONObject("options").getJSONObject("preload");
+                if (transition.equalsIgnoreCase("switchtab")) {
+                    if (action_options.has("preload")) {
+                        preload = action_options.getJSONObject("preload");
                     }
                     Intent intent = new Intent(this, JasonViewActivity.class);
+                    intent.putExtra("transition", transition);
                     intent.putExtra("depth", depth);
-                    if(params!=null) {
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
+                    }
+
+                    if (params!=null) {
                         intent.putExtra("params", params);
                         onSwitchTab(url, params, intent);
                     } else {
@@ -1491,25 +951,39 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     removeListViewOnItemTouchListeners();
 
                     Intent intent = new Intent(this, JasonViewActivity.class);
-                    if(params!=null) {
+                    intent.putExtra("transition", transition);
+                    intent.putExtra("url", url);
+                    intent.putExtra("depth", depth);
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
+                    }
+
+                    if (action_options.has("preload")) {
+                        intent.putExtra("preload", action_options.getJSONObject("preload").toString());
+                    }
+
+                    if (params!=null) {
                         intent.putExtra("params", params);
                     }
-                    intent.putExtra("depth", depth);
-                    model = new JasonModel(url, intent, this);
-                    if (action.getJSONObject("options").has("preload")) {
-                        preload = action.getJSONObject("options").getJSONObject("preload");
-                    }
-                    onRefresh();
+                    dispatchFragment(intent, true);
                 } else {
                     Intent intent = new Intent(this, JasonViewActivity.class);
+                    intent.putExtra("transition", transition);
                     intent.putExtra("url", url);
-                    if(params != null) {
+                    intent.putExtra("depth", depth+1);
+
+                    if (action.has("error")) {
+                        intent.putExtra("onError", action.getJSONObject("error").toString());
+                    }
+
+                    if (action_options.has("preload")) {
+                        intent.putExtra("preload", action_options.getJSONObject("preload").toString());
+                    }
+
+                    if (params != null) {
                         intent.putExtra("params", params);
                     }
-                    if (action.getJSONObject("options").has("preload")) {
-                        intent.putExtra("preload", action.getJSONObject("options").getJSONObject("preload").toString());
-                    }
-                    intent.putExtra("depth", depth+1);
 
                     // Start an Intent with a callback option:
                     // 1. call dispatchIntent
@@ -1517,33 +991,78 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     JSONObject callback = new JSONObject();
                     callback.put("class", "JasonCallback");
                     callback.put("method", "href");
-                    JasonHelper.dispatchIntent(action, data, event, context, intent, callback);
+                    if (transition.equalsIgnoreCase("modal")) {
+                        JasonHelper.dispatchIntent(action, data, event, context, intent, callback);
+                    } else {
+                        int requestCode = JasonHelper.dispatchIntent(action, data, event, context, null, callback);
+                        dispatchFragment(intent, false, requestCode);
+                    }
                 }
             }
-
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
     }
 
-    public void back ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        finish();
+    private void dispatchFragment(Intent intent, boolean replace) {
+        dispatchFragment(intent, replace, 0);
     }
-    public void close ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        finish();
-    }
-    public void ok ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        try {
-            Intent intent = new Intent();
-            if (action.has("options")) {
-                intent.putExtra("return", action.get("options").toString());
+
+    private void dispatchFragment(Intent intent, boolean replace, int requestCode) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        JasonFragment fragment = new JasonFragment();
+
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("intent", intent);
+        bundle.putInt("return", requestCode); // reference to the fragment intent that created it and it's callback
+        fragment.setArguments(bundle);
+
+        // If we are replacing we want to do it more quickly without a transition, the beginTransaction method starts
+        // an animated transaction of fragments, so we avoid using that while replacing.
+        FragmentTransaction fragmentTransaction = beginTransaction(fragmentManager, !replace);
+
+        final JasonFragment currentFragment = currentFragment();
+        if (currentFragment != null) {
+            currentFragment.onPause();
+            if (replace) {
+                fragmentTransaction.remove(currentFragment);
             }
-            setResult(RESULT_OK, intent);
-            finish();
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
+        fragmentTransaction.add(R.id.jason_fragment_container, fragment);
+
+        fragmentTransaction.commit();
+        shouldDisplayHomeUp();
     }
+
+    private void onSwitchTab(String newUrl, String newParams, Intent intent) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        boolean needsResume = fragmentManager.getFragments().size() > MINIMUM_FRAGMENTS;
+        while (fragmentManager.getFragments().size() > MINIMUM_FRAGMENTS) {
+            List<Fragment> fragments = fragmentManager.getFragments();
+            beginTransaction(fragmentManager, false).remove(fragments.get(fragments.size() - 1)).commitNow();
+        }
+        currentFragment().onSwitchTab(newUrl, newParams, intent);
+        if (needsResume) {
+            currentFragment().onResume();
+        } else {
+            currentFragment().onShow();
+        }
+        shouldDisplayHomeUp();
+    }
+
+    public void back ( final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ((JasonViewActivity)context).onBackPressed();
+            }
+        });
+    }
+
+    public void close ( final JSONObject action, JSONObject data, JSONObject event, Context context){
+        back(action, data, event, context);
+    }
+
     public void unlock ( final JSONObject action, JSONObject data, JSONObject event, Context context){
         if (event_queue.size() > 0) {
             JSONObject next_action = event_queue.get(0);
@@ -1556,32 +1075,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             }
         } else {
             isexecuting = false;
-            JasonViewActivity.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        loading.setVisibility(View.GONE);
-                        if (swipeLayout != null) {
-                            swipeLayout.setRefreshing(false);
-                        }
-
-                    } catch (Exception e) {
-                        Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                    }
-                }
-            });
-        }
-    }
-
-
-    public void reload ( final JSONObject action, JSONObject data, JSONObject event, Context context){
-        if(model != null){
-            onRefresh();
-            try {
-                JasonHelper.next("success", action, new JSONObject(), event, context);
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
         }
     }
 
@@ -1632,10 +1125,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 JSONObject options = action.getJSONObject("options");
                 if (options.has("position")) {
                     String position = options.getString("position");
-                    if(position.equalsIgnoreCase("top")) {
+                    if (position.equalsIgnoreCase("top")) {
                         listView.smoothScrollToPosition(0);
-                    } else if(position.equalsIgnoreCase("bottom")) {
+                    } else if (position.equalsIgnoreCase("bottom")) {
                         listView.smoothScrollToPosition(listView.getAdapter().getItemCount() - 1);
+                    } else {
+                        RecyclerView.SmoothScroller smoothScroller = new LinearSmoothScroller(context) {
+                            @Override protected int getVerticalSnapPreference() {
+                                return LinearSmoothScroller.SNAP_TO_START;
+                            }
+                        };
+                        smoothScroller.setTargetPosition(((ItemAdapter)listView.getAdapter()).getHeaderAt(parseInt(position)));
+                        listView.getLayoutManager().startSmoothScroll(smoothScroller);
                     }
                 }
             }
@@ -1644,537 +1145,74 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
         JasonHelper.next("success", action, new JSONObject(), event, context);
     }
-    /*************************************************************
-     *
-     * JASON VIEW
-     *
-     ************************************************************/
 
-    public void build(JSONObject jason){
-        // set fetched to true since build() is only called after network.request succeeds
-        fetched = true;
-        if(jason!=null) {
+    public void build(JSONObject jason) {
+        currentFragment().build(jason);
+    }
+
+    public void setup_header(JSONObject header){
+        if (header != null && header.has("style")) {
             try {
+                JSONObject style = header.getJSONObject("style");
 
-                // Set up background
-
-                if (jason.getJSONObject("$jason").has("body")) {
-                    final JSONObject body;
-                    body = (JSONObject) jason.getJSONObject("$jason").getJSONObject("body");
-                    model.set("state", new JSONObject());
-                    setup_body(body);
+                if (style.has("background")) {
+                    String backgroundColor = style.getString("background");
+                    toolbar.setBackgroundColor(JasonHelper.parse_color(backgroundColor));
                 }
 
-                if (jason.getJSONObject("$jason").has("head")) {
-                    final JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
+                if (style.has("gradient_background")) {
+                    JSONArray backgroundGradient = style.getJSONArray("gradient_background");
 
-                    if (head.has("agents")) {
-                        final JSONObject agents = head.getJSONObject("agents");
-                        Iterator<String> iterator = agents.keys();
-                        while (iterator.hasNext()) {
-                            final String key = iterator.next();
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        JasonAgentService agentService = (JasonAgentService)((Launcher)getApplicationContext()).services.get("JasonAgentService");
-                                        WebView agent = agentService.setup(JasonViewActivity.this, agents.getJSONObject(key), key);
-                                        rootLayout.addView(agent);
-                                    } catch (JSONException e) {
-                                    }
-                                }
+                    GradientDrawable gd = new GradientDrawable(
+                            GradientDrawable.Orientation.BL_TR,
+                            new int[]{
+                                    JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(0)),
+                                    JasonHelper.parse_color(((JSONArray) backgroundGradient).getString(1)),
                             });
-                        }
-
-                    }
-
-                    if (head.has("data")) {
-                        if (head.has("templates")) {
-                            if (head.getJSONObject("templates").has("body")) {
-                                model.set("state", new JSONObject());
-                                render(new JSONObject(), model.state, new JSONObject(), this);
-
-                                // return here so onLoad() below will NOT be triggered.
-                                // onLoad() will be triggered after render has finished
-                                return;
-                            }
-                        }
-                    }
-
+                    toolbar.setBackground(gd);
                 }
 
-                onLoad();
+                if (style.has("color")) {
+                    int color = JasonHelper.parse_color(style.getString("color"));
+                    toolbar.setTitleTextColor(color);
+                    toolbar.setSubtitleTextColor(color);
 
-            } catch (JSONException e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-
-    }
-
-    private void setup_body(final JSONObject body) {
-
-        // Store to offline cache in case head.offline == true
-        try {
-            model.rendered = body;
-            invalidateOptionsMenu();
-            if(model.jason != null && model.jason.has("$jason") && model.jason.getJSONObject("$jason").has("head") && model.jason.getJSONObject("$jason").getJSONObject("head").has("offline")){
-                SharedPreferences pref = getSharedPreferences("offline", 0);
-                SharedPreferences.Editor editor = pref.edit();
-
-                String signature = model.url + model.params.toString();
-                JSONObject offline_cache = new JSONObject();
-                offline_cache.put("jason", model.jason);
-                offline_cache.put("rendered", model.rendered);
-
-                editor.putString(signature, offline_cache.toString());
-                editor.commit();
-
-            }
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-
-
-
-        JasonViewActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // First need to remove all handlers because they will be reattached after render
-                    removeListViewOnItemTouchListeners();
-
-                    if(swipeLayout !=null) {
-                        swipeLayout.setRefreshing(false);
-                    }
-                    sectionLayout.setBackgroundColor(JasonHelper.parse_color("rgb(255,255,255)"));
-                    getWindow().getDecorView().setBackgroundColor(JasonHelper.parse_color("rgb(255,255,255)"));
-
-                    Object bg = null;
-                    if (body.has("style") && body.getJSONObject("style").has("background")) {
-                        bg = body.getJSONObject("style").get("background");
-                    } else if (body.has("background")) {
-                        bg = body.get("background");
-                    }
-
-                    // Background Logic
-                    if (bg != null) {
-                        // sectionLayout must be transparent to see the background
-                        sectionLayout.setBackgroundColor(JasonHelper.parse_color("rgba(0,0,0,0)"));
-
-                        // we remove the current view from the root layout
-                        Boolean needs_redraw = false;
-                        if (backgroundCurrentView != null) {
-                            String current_background = bg.toString();
-                            if(previous_background == null) {
-                                needs_redraw = true;
-                                rootLayout.removeView(backgroundCurrentView);
-                                backgroundCurrentView = null;
-                            } else if(current_background.equalsIgnoreCase(previous_background)) {
-                                needs_redraw = false;
-                            } else {
-                                needs_redraw = true;
-                                rootLayout.removeView(backgroundCurrentView);
-                                backgroundCurrentView = null;
-                            }
-                            previous_background = current_background;
-                        } else {
-                            needs_redraw = true;
-                            rootLayout.removeView(backgroundCurrentView);
-                            backgroundCurrentView = null;
-                        }
-
-                        if(needs_redraw) {
-                            if (bg instanceof String) {
-                                String background = (String)bg;
-                                JSONObject c = new JSONObject();
-                                c.put("url", background);
-                                if (background.matches("(file|http[s]?):\\/\\/.*")) {
-                                    if (backgroundImageView == null) {
-                                        backgroundImageView = new ImageView(JasonViewActivity.this);
-                                    }
-
-                                    backgroundCurrentView = backgroundImageView;
-
-                                    DiskCacheStrategy cacheStrategy = DiskCacheStrategy.RESULT;
-                                    // gif doesn't work with RESULT cache strategy
-                                    // TODO: Check with Glide V4
-                                    if (background.matches(".*\\.gif")) {
-                                        cacheStrategy = DiskCacheStrategy.SOURCE;
-                                    }
-
-                                    with(JasonViewActivity.this)
-                                            .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
-                                            .diskCacheStrategy(cacheStrategy)
-                                            .centerCrop()
-                                            .into(backgroundImageView);
-                                } else if (background.matches("data:image.*")) {
-                                    String base64;
-                                    if (background.startsWith("data:image/jpeg")) {
-                                        base64 = background.substring("data:image/jpeg;base64,".length());
-                                    } else if (background.startsWith("data:image/png")) {
-                                        base64 = background.substring("data:image/png;base64,".length());
-                                    } else if (background.startsWith("data:image/gif")) {
-                                        base64 = background.substring("data:image/gif;base64,".length());
-                                    } else {
-                                        base64 = "";    // exception
-                                    }
-                                    byte[] bs = Base64.decode(base64, Base64.NO_WRAP);
-
-                                    with(JasonViewActivity.this).load(bs).into(new SimpleTarget<GlideDrawable>() {
-                                        @Override
-                                        public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
-                                            sectionLayout.setBackground(resource);
-                                        }
-                                    });
-                                } else {
-                                    if (background.equalsIgnoreCase("camera")) {
-                                        int side = JasonVisionService.FRONT;
-                                        if (cameraManager == null) {
-                                            cameraManager = new JasonVisionService(JasonViewActivity.this);
-                                            backgroundCameraView = cameraManager.getView();
-                                        }
-                                        cameraManager.setSide(side);
-                                        backgroundCurrentView = backgroundCameraView;
-                                    } else {
-                                        sectionLayout.setBackgroundColor(JasonHelper.parse_color(background));
-                                        getWindow().getDecorView().setBackgroundColor(JasonHelper.parse_color(background));
-                                    }
-                                }
-                            } else {
-                                JSONObject background = (JSONObject)bg;
-                                String type = background.getString("type");
-                                if (type.equalsIgnoreCase("html")) {
-                                    // on Android the tabs work differently from iOS
-                                    // => All tabs share a single activity.
-                                    // therefore, unlike ios where each viewcontroller owns a web container through "$webcontainer" id,
-                                    // on android we need to distinguish between multiple web containers through URL
-                                    background.put("id", "$webcontainer@" + model.url);
-                                    JasonAgentService agentService = (JasonAgentService)((Launcher)getApplicationContext()).services.get("JasonAgentService");
-                                    backgroundWebview = agentService.setup(JasonViewActivity.this, background, "$webcontainer@" + model.url);
-                                    backgroundWebview.setVisibility(View.VISIBLE);
-                                    // not interactive by default;
-                                    Boolean responds_to_webview = false;
-
-
-                                    /**
-
-                                     if has an 'action' attribute
-                                     - if the action is "type": "$default"
-                                     => Allow touch. The visit will be handled in the agent handler
-                                     - if the action is everything else
-                                     => Allow touch. The visit will be handled in the agent handler
-                                     if it doesn't have an 'action' attribute
-                                     => Don't allow touch.
-
-                                     **/
-                                    if (background.has("action")) {
-                                        responds_to_webview = true;
-                                    }
-                                    if (responds_to_webview) {
-                                        // webview receives click
-                                        backgroundWebview.setOnTouchListener(null);
-                                    } else {
-                                        // webview shouldn't receive click
-                                        backgroundWebview.setOnTouchListener(new View.OnTouchListener() {
-                                            @Override
-                                            public boolean onTouch(View v, MotionEvent event) {
-                                                return true;
-                                            }
-                                        });
-                                    }
-                                    backgroundCurrentView = backgroundWebview;
-                                } else if (type.equalsIgnoreCase("camera")) {
-                                    int side = JasonVisionService.FRONT;
-                                    if (background.has("options")) {
-                                        JSONObject options = background.getJSONObject("options");
-                                        if (options.has("device") && options.getString("device").equals("back")) {
-                                            side = JasonVisionService.BACK;
-                                        }
-                                    }
-
-                                    if (cameraManager == null) {
-                                        cameraManager = new JasonVisionService(JasonViewActivity.this);
-                                        backgroundCameraView = cameraManager.getView();
-                                    }
-                                    cameraManager.setSide(side);
-                                    backgroundCurrentView = backgroundCameraView;
-                                }
-                            }
-
-                            if (backgroundCurrentView != null) {
-                                RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
-                                        RelativeLayout.LayoutParams.MATCH_PARENT,
-                                        RelativeLayout.LayoutParams.MATCH_PARENT);
-
-                                // Update Layout after the rootLayout has finished rendering in order to change the background dimension
-                                rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-
-                                    @Override
-                                    public void onGlobalLayout() {
-                                        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                            rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                                        }
-                                        else {
-                                            rootLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                                        }
-
-                                        // header
-                                        int toolbarHeight = 0;
-                                        if (body.has("header")) { toolbarHeight = toolbar.getHeight(); }
-
-                                        // footer.tabs
-                                        int tabsHeight = 0;
-                                        if (bottomNavigation != null) { tabsHeight = bottomNavigation.getHeight(); }
-
-                                        // footer.input
-                                        int inputHeight = 0;
-                                        if (footerInput != null) { inputHeight = footerInput.getHeight(); }
-
-                                        RelativeLayout.LayoutParams newrlp = new RelativeLayout.LayoutParams(
-                                                RelativeLayout.LayoutParams.MATCH_PARENT,
-                                                RelativeLayout.LayoutParams.MATCH_PARENT);
-                                        newrlp.setMargins(0, toolbarHeight, 0, tabsHeight + inputHeight);
-                                        backgroundCurrentView.setLayoutParams(newrlp);
-                                    }
-                                });
-
-                                rootLayout.addView(backgroundCurrentView, 0, rlp);
-                            }
-                        }
-                    }
-
-                    rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                        @Override
-                        public void onGlobalLayout() {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                            } else {
-                                rootLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                            }
-                            if (focusView != null) {
-                                focusView.requestFocus();
-                                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
-                            }
-                        }
-                    });
-
-                    // Set header
-                    if (body.has("header")) {
-                        setup_header(body.getJSONObject("header"));
-                        toolbar.setVisibility(View.VISIBLE);
-                    } else {
-                        toolbar.setVisibility(View.GONE);
-                    }
-                    // Set sections
-                    if (body.has("sections")) {
-                        setup_sections(body.getJSONArray("sections"));
-                        String border = "#eaeaea"; // Default color
-
-                        if (body.has("style") && body.getJSONObject("style").has("border")) {
-                            border = body.getJSONObject("style").getString("border");
-                        }
-
-                        if (divider != null) {
-                            listView.removeItemDecoration(divider);
-                            divider = null;
-                        }
-
-                        if (!border.equalsIgnoreCase("none")) {
-                            int color = JasonHelper.parse_color(border);
-                            listView.removeItemDecoration(divider);
-                            divider = new HorizontalDividerItemDecoration.Builder(JasonViewActivity.this)
-                                    .color(color)
-                                    .showLastDivider()
-                                    .positionInsideItem(true)
-                                    .build();
-                            listView.addItemDecoration(divider);
-                        }
-                    } else {
-                        setup_sections(null);
-                    }
-
-
-                    swipeLayout.setEnabled(false);
-                    if(model.jason != null && model.jason.has("$jason") && model.jason.getJSONObject("$jason").has("head")){
-                        final JSONObject head = model.jason.getJSONObject("$jason").getJSONObject("head");
-                        if(head.has("actions") && head.getJSONObject("actions").has("$pull")) {
-                            // Setup refresh listener which triggers new data loading
-                            swipeLayout.setEnabled(true);
-                            swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                                @Override
-                                public void onRefresh() {
-                                    try {
-                                        JSONObject action = head.getJSONObject("actions").getJSONObject("$pull");
-                                        call(action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    } catch (Exception e) {
-                                        Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                    }
-                                }
-                            });
-                        }
-                    }
-
-
-                    if (body.has("style")) {
-                        JSONObject style = body.getJSONObject("style");
-                        if (style.has("align")) {
-                            if (style.getString("align").equalsIgnoreCase("bottom")) {
-                                ((LinearLayoutManager) listView.getLayoutManager()).setStackFromEnd(true);
-                                listView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                                    @Override
-                                    public void onLayoutChange(View view, int i, int i1, int i2, int i3, int i4, int i5, int i6, int i7) {
-                                        if (i3 < i7) {
-                                            listView.postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (listView.getAdapter().getItemCount() > 0) {
-                                                        listView.smoothScrollToPosition( listView.getAdapter().getItemCount() - 1);
-                                                    }
-                                                }
-                                            }, 100);
-                                        }
-                                    }
-                                });
-
-                            }
-                        }
-                    }
-
-                    // Set footer
-                    if (body.has("footer")) {
-                        setup_footer(body.getJSONObject("footer"));
-                    }
-
-
-                    // Set layers
-                    if (body.has("layers")){
-                        setup_layers(body.getJSONArray("layers"));
-                    } else {
-                        setup_layers(null);
-                    }
-                    rootLayout.requestLayout();
-
-                    // if the first time being loaded
-                    if(!loaded){
-                        // and if the content has finished fetching (not via remote: true)
-                        if(fetched) {
-                            // trigger onLoad.
-                            // onLoad shouldn't be triggered when just drawing the offline cached view initially
-                            onLoad();
-                        }
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    final Drawable upArrow = ContextCompat.getDrawable(this, R.drawable.abc_ic_ab_back_material);
+                    upArrow.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+                    getSupportActionBar().setHomeAsUpIndicator(upArrow);
                 }
+
+            } catch (Exception e){
+              Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
 
-        });
-    }
-
-
-
-    private void setup_header(JSONObject header){
-        try{
-            String backgroundColor = header.getJSONObject("style").getString("background");
-            toolbar.setBackgroundColor(JasonHelper.parse_color(backgroundColor));
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-
-        try{
-            String color = header.getJSONObject("style").getString("color");
-            toolbar.setTitleTextColor(JasonHelper.parse_color(color));
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-
-    }
-
-
-    private void setup_sections(JSONArray sections){
-        section_items = new ArrayList<JSONObject>();
-        if(sections!=null) {
-            try {
-                for (int i = 0; i < sections.length(); i++) {
-                    JSONObject section = (JSONObject) sections.getJSONObject(i);
-
-                    // Determine if it's a horizontal section or vertical section
-                    // if it's vertical, simply keep adding to the section as individual items
-                    // if it's horizontal, start a nested recyclerview
-                    if (section.has("type") && section.getString("type").equals("horizontal")) {
-                        // horizontal type
-                        // TEMPORARY: Add header as an item
-                        if (section.has("header")) {
-                            JSONObject header = (JSONObject) section.getJSONObject("header");
-                            section_items.add(header);
-                        }
-                        if (section.has("items")) {
-                            // Let's add the entire section as an item, under:
-                            // "horizontal_section": [items]
-                            JSONObject horizontal_section = new JSONObject();
-                            horizontal_section.put("horizontal_section", section.getJSONArray("items"));
-                            section_items.add(horizontal_section);
-                        }
-                    } else {
-                        // vertical type (default)
-                        if (section.has("header")) {
-                            JSONObject header = (JSONObject) section.getJSONObject("header");
-                            section_items.add(header);
-                        }
-                        if (section.has("items")) {
-                            JSONArray items = (JSONArray) section.getJSONArray("items");
-                            for (int j = 0; j < items.length(); j++) {
-                                JSONObject item = (JSONObject) items.getJSONObject(j);
-                                section_items.add(item);
-                            }
-                        }
-                    }
-                }
-            } catch (JSONException e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-            }
-        }
-
-        if (adapter == null || adapter.getItems().size() == 0) {
-            // Create adapter passing in the sample user data
-            adapter = new ItemAdapter(this, this, section_items);
-            // Attach the adapter to the recyclerview to populate items
-            listView.setAdapter(adapter);
-            // Set layout manager to position the items
-            listView.setLayoutManager(new LinearLayoutManager(this));
+            toolbar.setVisibility(View.VISIBLE);
         } else {
-            //ArrayList<JSONObject> old_section_items = adapter.getItems();
-            adapter.updateItems(section_items);
-            adapter.notifyDataSetChanged();
+            toolbar.setVisibility(View.GONE);
         }
-
-
     }
 
-    private void setup_footer(JSONObject footer){
+    public void setup_footer(JSONObject footer){
         try {
-            if(footer.has("tabs")){
+            if (footer.has("tabs")) {
                 setup_tabs(footer.getJSONObject("tabs"));
-            } else {
-                if (bottomNavigation != null) {
-                    rootLayout.removeView(bottomNavigation);
-                }
+                findViewById(R.id.jason_bottom_navigation).setVisibility(View.VISIBLE);
             }
-            if(footer.has("input")){
+            else if (footer.has("input")) {
                 setup_input(footer.getJSONObject("input"));
+                findViewById(R.id.jason_bottom_navigation).setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
     }
 
-    private void setup_input(JSONObject input){
+    private void setup_input(JSONObject input) {
         // Set up a horizontal linearlayout
         // which sticks to the bottom
-        rootLayout.removeView(footerInput);
+        AHBottomNavigation footerLayout = findViewById(R.id.jason_bottom_navigation);
+
+        footerLayout.removeView(footerInput);
         int height = (int) JasonHelper.pixels(JasonViewActivity.this, "60", "vertical");
         int spacing = (int) JasonHelper.pixels(JasonViewActivity.this, "5", "vertical");
         int outer_padding = (int) JasonHelper.pixels(JasonViewActivity.this, "10", "vertical");
@@ -2182,7 +1220,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         footerInput.setOrientation(LinearLayout.HORIZONTAL);
         footerInput.setGravity(Gravity.CENTER_VERTICAL);
         footerInput.setPadding(outer_padding,0,outer_padding,0);
-        rootLayout.addView(footerInput);
+        footerLayout.addView(footerInput);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, height);
 
         params.bottomMargin = 0;
@@ -2190,22 +1228,20 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         footerInput.setLayoutParams(params);
 
         try {
-            if(input.has("style")){
-                if(input.getJSONObject("style").has("background")){
-                    int color = JasonHelper.parse_color(input.getJSONObject("style").getString("background"));
-                    footerInput.setBackgroundColor(color);
-                }
+            if(input.has("style") && input.getJSONObject("style").has("background")){
+                int color = JasonHelper.parse_color(input.getJSONObject("style").getString("background"));
+                footerInput.setBackgroundColor(color);
             }
-            if(input.has("left")) {
+            if (input.has("left")) {
                 JSONObject json = input.getJSONObject("left");
                 JSONObject style;
-                if(json.has("style")){
+                if (json.has("style")) {
                     style = json.getJSONObject("style");
                 }  else {
                     style = new JSONObject();
                 }
                 style.put("height", "25");
-                if(json.has("image")) {
+                if (json.has("image")) {
                     json.put("url", json.getString("image"));
                 }
                 json.put("type", "button");
@@ -2217,7 +1253,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             }
 
             JSONObject textfield;
-            if(input.has("textfield")) {
+            if (input.has("textfield")) {
                 textfield = input.getJSONObject("textfield");
             } else {
                 textfield = input;
@@ -2239,18 +1275,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             layout_params.topMargin = spacing;
             layout_params.bottomMargin = spacing;
 
-            if(input.has("right")) {
+            if (input.has("right")) {
                 JSONObject json = input.getJSONObject("right");
                 JSONObject style;
-                if(json.has("style")){
+                if (json.has("style")) {
                     style = json.getJSONObject("style");
                 }  else {
                     style = new JSONObject();
                 }
-                if(!json.has("image") && !json.has("text")){
+                if (!json.has("image") && !json.has("text")) {
                     json.put("text", "Send");
                 }
-                if(json.has("image")) {
+                if (json.has("image")) {
                     json.put("url", json.getString("image"));
                 }
                 style.put("height", "25");
@@ -2275,21 +1311,14 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     private void setup_tabs(JSONObject tabs){
         try {
             final JSONArray items = tabs.getJSONArray("items");
-            if(bottomNavigation == null) {
-                bottomNavigation = new AHBottomNavigation(this);
-                rootLayout.addView(bottomNavigation);
-                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-                params.bottomMargin = 0;
-                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-                bottomNavigation.setLayoutParams(params);
-            }
-            bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_HIDE);
-            bottomNavigation.setBehaviorTranslationEnabled(true);
-
-            bottomNavigation.setDefaultBackgroundColor(Color.parseColor("#FEFEFE"));
             JSONObject style;
+            if (bottomNavigation == null) {
+                bottomNavigation = this.findViewById(R.id.jason_bottom_navigation);
+                bottomNavigation.setDefaultBackgroundColor(Color.parseColor("#FEFEFE"));
 
-            if(tabs.has("style")){
+            }
+
+            if (tabs.has("style")) {
                 style = tabs.getJSONObject("style");
                 if (style.has("color")) {
                     int color = JasonHelper.parse_color(style.getString("color"));
@@ -2305,15 +1334,23 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     bottomNavigation.setBackgroundColor(background);
                 }
             }
+            boolean sameNavigationItems = true;
+            if (bottomNavigation.getItemsCount() == items.length()) {
+                for (int i = 0; i < items.length(); i++) {
+                    if (((JSONObject) items.get(i)).getString("text") != bottomNavigation.getItem(i).getTitle(this)) {
+                        sameNavigationItems = false;
+                    }
+                }
+            } else {
+                sameNavigationItems = false;
+            }
 
-
-            if(bottomNavigation.getItemsCount() == items.length()){
+            if (sameNavigationItems) {
                 // if the same number as the previous state, try to fill in the items instead of re-instantiating them all
-
 
                 for (int i = 0; i < items.length(); i++) {
                     final JSONObject item = items.getJSONObject(i);
-                    if(item.has("image")) {
+                    if (item.has("image")) {
 
                         String temptext = "";
                         try {
@@ -2331,11 +1368,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         c.put("url", item.getString("image"));
                         Glide
                                 .with(this)
-                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .asBitmap()
+                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
                                 .into(new SimpleTarget<Bitmap>(100, 100) {
                                     @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
+                                    public void onResourceReady(Bitmap resource, Transition glideAnimation) {
                                         AHBottomNavigationItem tab_item = bottomNavigation.getItem(index);
                                         bottomNavigationItems.put(Integer.valueOf(index), tab_item);
                                         Drawable drawable = new BitmapDrawable(getResources(), resource);
@@ -2343,17 +1380,16 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                                         tab_item.setTitle(text);
                                     }
                                     @Override
-                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                    public void onLoadFailed(Drawable errorDrawable) {
                                         AHBottomNavigationItem tab_item = bottomNavigation.getItem(index);
                                         bottomNavigationItems.put(Integer.valueOf(index), tab_item);
                                         tab_item.setTitle(text);
                                     }
                                 });
 
-                    } else if(item.has("text")){
-                        String text = "";
+                    } else if (item.has("text")) {
+                        String text = item.getString("text");
                         try {
-                            text = item.getString("text");
                             bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
                         } catch (Exception e) {
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -2366,63 +1402,17 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     }
                 }
             } else {
+                // The navigation didn't match so we want to remove items before continuing to draw the new ones
+                bottomNavigation.removeAllItems();
+                bottomNavigationItems = new SparseArray<AHBottomNavigationItem>(5);
 
-                bottomNavigationItems = new HashMap<Integer, AHBottomNavigationItem>();
                 for (int i = 0; i < items.length(); i++) {
                     final JSONObject item = items.getJSONObject(i);
                     final int index = i;
-                    if(item.has("image")) {
-                        JSONObject c = new JSONObject();
-                        c.put("url", item.getString("image"));
-                        with(this)
-                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
-                                .asBitmap()
-                                .into(new SimpleTarget<Bitmap>(100, 100) {
-                                    @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation glideAnimation) {
-                                        String text = "";
-                                        try {
-                                            if (item.has("text")) {
-                                                text = item.getString("text");
-                                                bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
-                                            }
-                                        } catch (Exception e) {
-                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                        }
-                                        Drawable drawable = new BitmapDrawable(getResources(), resource);
-                                        AHBottomNavigationItem item = new AHBottomNavigationItem(text, drawable);
-                                        bottomNavigationItems.put(Integer.valueOf(index), item);
-                                        if(bottomNavigationItems.size() >= items.length()){
-                                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                                            }
-                                        }
-                                    }
-                                    @Override
-                                    public void onLoadFailed(Exception exception, Drawable errorDrawable) {
-                                        String text = "";
-                                        try {
-                                            if (item.has("text")) {
-                                                text = item.getString("text");
-                                                bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
-                                            }
-                                        } catch (Exception e) {
-                                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                        }
-
-                                        ColorDrawable d = new ColorDrawable(Color.TRANSPARENT);
-                                        AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text,d);
-                                        bottomNavigationItems.put(Integer.valueOf(index), tab_item);
-                                        if(bottomNavigationItems.size() >= items.length()){
-                                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                                            }
-                                        }
-                                    }
-                                });
-
-                    } else if(item.has("text")){
-                        String text = "";
+                    String text = "";
+                    ColorDrawable blank_image = new ColorDrawable(Color.TRANSPARENT);
+                    final AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text, blank_image);
+                    if (item.has("text")) {
                         try {
                             if (item.has("text")) {
                                 text = item.getString("text");
@@ -2432,44 +1422,58 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
 
-                        ColorDrawable d = new ColorDrawable(Color.TRANSPARENT);
-                        AHBottomNavigationItem tab_item = new AHBottomNavigationItem(text,d);
-                        bottomNavigationItems.put(Integer.valueOf(index), tab_item);
-                        if(bottomNavigationItems.size() >= items.length()){
-                            for(int j = 0; j < bottomNavigationItems.size(); j++){
-                                bottomNavigation.addItem(bottomNavigationItems.get(Integer.valueOf(j)));
-                            }
+                        tab_item.setTitle(text);
+                    }
+                    if (item.has("image")) {
+                        JSONObject c = new JSONObject();
+                        c.put("url", item.getString("image"));
+                        with(this)
+                                .asBitmap()
+                                .load(JasonImageComponent.resolve_url(c, JasonViewActivity.this))
+                                .into(new SimpleTarget<Bitmap>(100, 100) {
+                                    @Override
+                                    public void onResourceReady(Bitmap resource, Transition glideAnimation) {
+                                        Drawable drawable = new BitmapDrawable(getResources(), resource);
+                                        tab_item.setDrawable(drawable);
+                                        // Tell the bottomNavigation to update the visuals if they're different
+                                        bottomNavigation.refresh();
+                                    }
+                                });
+
+                    }
+                    bottomNavigationItems.put(Integer.valueOf(index), tab_item);
+                    if (bottomNavigationItems.size() >= items.length()) {
+                        for (int j = 0; j < bottomNavigationItems.size(); j++) {
+                            bottomNavigation.addItem(bottomNavigationItems.get(j));
                         }
                     }
                 }
-
             }
+
             for (int i = 0; i < items.length(); i++) {
                 final JSONObject item = items.getJSONObject(i);
                 if (item.has("badge")) {
                     bottomNavigation.setNotification(item.get("badge").toString(), i);
                 }
             }
+
             bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
                 @Override
                 public boolean onTabSelected(int position, boolean wasSelected) {
                     try {
-                        int current = bottomNavigation.getCurrentItem();
                         JSONObject item = items.getJSONObject(position);
-                        if(item.has("href")) {
+                        if (item.has("href")) {
                             JSONObject action = new JSONObject();
                             JSONObject href = item.getJSONObject("href");
-                            if (href.has("transition")) {
-                                // nothing
-                            } else {
+                            if (!href.has("transition")) {
                                 href.put("transition", "switchtab");
                             }
                             action.put("options", href);
                             href(action, new JSONObject(), new JSONObject(), JasonViewActivity.this);
-                        } else if(item.has("action")){
+                        } else if (item.has("action")) {
                             call(item.get("action").toString(), "{}", "{}", JasonViewActivity.this);
                             return false;
-                        } else if(item.has("url")) {
+                        } else if (item.has("url")) {
                             String url = item.getString("url");
                             JSONObject action = new JSONObject();
                             JSONObject options = new JSONObject();
@@ -2487,68 +1491,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                     return true;
                 }
             });
-
-            listView.setClipToPadding(false);
-            listView.setPadding(0,0,0,160);
         } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-    }
-
-
-    private void setup_layers(JSONArray layers){
-        try{
-            if(layer_items != null) {
-                for (int j = 0; j < layer_items.size(); j++) {
-                    View layerView = layer_items.get(j);
-                    rootLayout.removeView(layerView);
-                }
-                layer_items = new ArrayList<View>();
-            }
-            if(layers != null) {
-                for(int i = 0; i<layers.length(); i++){
-                    JSONObject layer = (JSONObject)layers.getJSONObject(i);
-                    if(layer.has("type")){
-                        View view = JasonComponentFactory.build(null, layer, null, JasonViewActivity.this);
-                        JasonComponentFactory.build(view, layer, null, JasonViewActivity.this);
-                        stylize_layer(view, layer);
-                        rootLayout.addView(view);
-                        layer_items.add(view);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        }
-    }
-
-    private void stylize_layer(View view, JSONObject component){
-        try{
-            JSONObject style = JasonHelper.style(component, this);
-            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)view.getLayoutParams();
-
-            if(style.has("top")){
-                int top = (int) JasonHelper.pixels(JasonViewActivity.this, style.getString("top"), "vertical");
-                params.topMargin = top;
-                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-            }
-            if(style.has("left")){
-                int left = (int) JasonHelper.pixels(JasonViewActivity.this, style.getString("left"), "horizontal");
-                params.leftMargin = left;
-                params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-            }
-            if(style.has("right")){
-                int right = (int) JasonHelper.pixels(JasonViewActivity.this, style.getString("right"), "horizontal");
-                params.rightMargin = right;
-                params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            }
-            if(style.has("bottom")){
-                int bottom = (int) JasonHelper.pixels(JasonViewActivity.this, style.getString("bottom"), "vertical");
-                params.bottomMargin = bottom;
-                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-            }
-            view.setLayoutParams(params);
-        } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
     }
@@ -2557,215 +1500,265 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     public boolean onPrepareOptionsMenu(Menu menu) {
         try {
             menu = toolbar.getMenu();
-            if (model.rendered != null) {
-                if(!model.rendered.has("header")){
-                    setup_title(new JSONObject());
-                }
-                JSONObject header = model.rendered.getJSONObject("header");
+            // Clear out old menu item if present
+            try {
+                menu.removeItem(0);
+            } catch (Exception e) { }
 
-                header_height = toolbar.getHeight();
+            if (model.rendered == null) {
+                return super.onPrepareOptionsMenu(menu);
+            }
 
-                setup_title(header);
+            if (!model.rendered.has("header")) {
+                setup_title(new JSONObject());
+            }
+            // Breaks by design short circuiting the code when a header isn't present on the view
+            JSONObject header = model.rendered.getJSONObject("header");
 
-                if(header.has("search")){
-                    SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-                    final JSONObject search = header.getJSONObject("search");
-                    if (searchView == null) {
-                        searchView = new SearchView(this);
-                        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            header_height = toolbar.getHeight();
 
-                        // put the search icon on the right hand side of the toolbar
-                        searchView.setLayoutParams(new Toolbar.LayoutParams(Gravity.RIGHT));
+            setup_title(header);
 
-                        toolbar.addView(searchView);
-                    } else {
-                        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-                    }
+            if (header.has("search")) {
+                SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+                final JSONObject search = header.getJSONObject("search");
+                if (searchView == null) {
+                    searchView = new SearchView(this);
+                    searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+                    searchView.setIconifiedByDefault(false); // start it expanded;
+                    searchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+                    searchView.setInputType(InputType.TYPE_CLASS_TEXT);
 
-                    // styling
-
-                    // color
-                    int c;
-                    if(search.has("style") && search.getJSONObject("style").has("color")){
-                        c = JasonHelper.parse_color(search.getJSONObject("style").getString("color"));
-                    } else if(header.has("style") && header.getJSONObject("style").has("color")){
-                        c = JasonHelper.parse_color(header.getJSONObject("style").getString("color"));
-                    } else {
-                        c = -1;
-                    }
-                    if(c > 0) {
-                        ImageView searchButton = (ImageView) searchView.findViewById(android.support.v7.appcompat.R.id.search_button);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            searchButton.setImageTintList(ColorStateList.valueOf(JasonHelper.parse_color(header.getJSONObject("style").getString("color"))));
-                        }
-                    }
-
-                    // background
-                    if(search.has("style") && search.getJSONObject("style").has("background")){
-                        int bc = JasonHelper.parse_color(search.getJSONObject("style").getString("background"));
-                        searchView.setBackgroundColor(bc);
-                    }
-
-                    // placeholder
-                    if(search.has("placeholder")){
-                        searchView.setQueryHint(search.getString("placeholder"));
-                    }
-
-
-                    searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
+                    LinearLayout linearLayoutOfSearchView = (LinearLayout) searchView.getChildAt(0);
+                    Button cancelButton = new Button(JasonViewActivity.this);
+                    cancelButton.setText("Cancel");
+                    cancelButton.setVisibility(View.GONE);
+                    cancelButton.setOnClickListener(new View.OnClickListener() {
                         @Override
-                        public boolean onQueryTextSubmit(String s) {
-                            // name
-                            if(search.has("name")){
-                                try {
-                                    JSONObject kv = new JSONObject();
-                                    kv.put(search.getString("name"), s);
-                                    model.var = JasonHelper.merge(model.var, kv);
-                                    if(search.has("action")){
-                                        call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    }
-                                } catch (Exception e){
-                                    Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                                }
-                            }
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onQueryTextChange(String s) {
-                            if(search.has("action")){
-                                return false;
-                            } else {
-                                if(listView != null){
-                                    ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
-                                    adapter.filter(s);
-                                }
-                                return true;
-                            }
+                        public void onClick(View v) {
+                           searchView.clearFocus();
                         }
                     });
+                    linearLayoutOfSearchView.addView(cancelButton);
+
+                    ((LinearLayout) findViewById(R.id.jason_header_container)).addView(searchView);
+                } else {
+                    searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+                    searchView.setVisibility(View.VISIBLE);
+
+                    String current_query = "";
+                    if (search.has("name") && model.var.has(search.getString("name"))) {
+                        current_query = model.var.getString(search.getString("name"));
+                    }
+                    searchView.setQuery(current_query, false);
                 }
 
+                // styling
 
-                if (header.has("menu")) {
-                    JSONObject json = header.getJSONObject("menu");
-
-                    final MenuItem item = menu.add("Menu");
-                    item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-                    // We're going to create a button.
-                    json.put("type", "button");
-
-                    // if it's an image button, both url and image should work
-                    if(json.has("image")) {
-                        json.put("url", json.getString("image"));
+                // color
+                int c;
+                if (search.has("style") && search.getJSONObject("style").has("color")) {
+                    c = JasonHelper.parse_color(search.getJSONObject("style").getString("color"));
+                } else if (header.has("style") && header.getJSONObject("style").has("color")) {
+                    c = JasonHelper.parse_color(header.getJSONObject("style").getString("color"));
+                } else {
+                    c = -1;
+                }
+                if (c > 0) {
+                    ImageView searchButton = (ImageView) searchView.findViewById(androidx.appcompat.R.id.search_button);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        searchButton.setImageTintList(ColorStateList.valueOf(JasonHelper.parse_color(header.getJSONObject("style").getString("color"))));
                     }
+                }
 
-                    // let's override the style so the menu button size has a sane dimension
-                    JSONObject style;
-                    if(json.has("style")) {
-                        style = json.getJSONObject("style");
-                    } else {
-                        style = new JSONObject();
-                    }
+                // background
+                if (search.has("style") && search.getJSONObject("style").has("background")) {
+                    int bc = JasonHelper.parse_color(search.getJSONObject("style").getString("background"));
+                    searchView.setBackgroundColor(bc);
+                }
 
-                    // For image, limit the height so it doesn't look too big
-                    if(json.has("url")){
-                        style.put("height", JasonHelper.pixels(this, "8", "vertical"));
-                    }
+                // placeholder
+                if (search.has("placeholder")) {
+                    searchView.setQueryHint(search.getString("placeholder"));
+                }
 
-                    json.put("style", style);
+                searchView.setOnQueryTextFocusChangeListener(new SearchView.OnFocusChangeListener(){
+                    @Override
+                    public void onFocusChange(View v, boolean hasFocus) {
+                        Button cancelButton = (Button)((LinearLayout)searchView.getChildAt(0)).getChildAt(3);
 
-                    // Now creating the menuButton and itemview
-                    FrameLayout itemView;
-                    View menuButton;
-                    if(item.getActionView() == null){
-                        // Create itemView if it doesn't exist yet
-                        itemView = new FrameLayout(this);
-                        menuButton = JasonComponentFactory.build(null, json, null, JasonViewActivity.this);
-                        JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
-                        itemView.addView(menuButton);
-                        item.setActionView(itemView);
-                    } else {
-                        // Reuse the itemView if it already exists
-                        itemView = (FrameLayout)item.getActionView();
-                        menuButton = itemView.getChildAt(0);
-                        JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
-                    }
-
-                    FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-                    menuButton.setLayoutParams(lp);
-
-                    // Set padding for the image menu button
-                    if(json.has("image")) {
-                        int padding = (int) JasonHelper.pixels(this, "15", "vertical");
-                        itemView.setPadding(padding, padding, padding, padding);
-                    }
-
-                    if(json.has("badge")){
-                        String badge_text = "";
-                        JSONObject badge = json.getJSONObject("badge");
-                        if(badge.has("text")) {
-                            badge_text = badge.get("text").toString();
-                        }
-                        JSONObject badge_style;
-                        if (badge.has("style")) {
-                            badge_style = badge.getJSONObject("style");
-                        } else {
-                            badge_style = new JSONObject();
+                        if(hasFocus) {
+                            cancelButton.setVisibility(View.VISIBLE);
+                        } else{
+                            cancelButton.setVisibility(View.GONE);
                         }
 
-                        int color = JasonHelper.parse_color("#ffffff");
-                        int background = JasonHelper.parse_color("#ff0000");
+                    }
+                });
 
-                        if(badge_style.has("color")) color = JasonHelper.parse_color(badge_style.getString("color"));
-                        if(badge_style.has("background")) background = JasonHelper.parse_color(badge_style.getString("background"));
+                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
 
-                        MaterialBadgeTextView v = new MaterialBadgeTextView(this);
-                        v.setBackgroundColor(background);
-                        v.setTextColor(color);
-                        v.setText(badge_text);
-
-                        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-                        //layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
-                        int left = (int)JasonHelper.pixels(this, String.valueOf(30), "horizontal");
-                        int top = (int)JasonHelper.pixels(this, String.valueOf(-3), "vertical");
-                        if(badge_style.has("left")){
-                            left = (int)JasonHelper.pixels(this, badge_style.getString("left"), "horizontal");
+                    private void submitQuery(String s) {
+                        try {
+                            JSONObject kv = new JSONObject();
+                            kv.put(search.getString("name"), s);
+                            model.var = JasonHelper.merge(model.var, kv);
+                            if (search.has("action")) {
+                                call(search.getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                            }
+                            searchView.clearFocus();
+                        } catch (Exception e){
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
-                        if(badge_style.has("top")) {
-                            top = (int)JasonHelper.pixels(this, String.valueOf(Integer.parseInt(badge_style.getString("top"))), "vertical");
-                        }
-                        layoutParams.setMargins(left,top,0,0);
-                        itemView.addView(v);
-                        v.setLayoutParams(layoutParams);
-                        itemView.setClipChildren(false);
-                        itemView.setClipToPadding(false);
-
                     }
 
+                    @Override
+                    public boolean onQueryTextSubmit(String s) {
+                        // name
+                        if (search.has("name")) {
+                            submitQuery(s);
+                        }
+                        return false;
+                    }
 
-                    item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem menuItem) {
-                            try {
-                                JSONObject header = model.rendered.getJSONObject("header");
-                                if (header.has("menu")) {
-                                    if (header.getJSONObject("menu").has("action")) {
-                                        call(header.getJSONObject("menu").getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    } else if (header.getJSONObject("menu").has("href")) {
-                                        JSONObject action = new JSONObject().put("type", "$href").put("options", header.getJSONObject("menu").getJSONObject("href"));
-                                        call(action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
-                                    }
+                    @Override
+                    public boolean onQueryTextChange(String s) {
+                        try {
+                            if (search.has("action")) {
+                                if (TextUtils.isEmpty(s) && !TextUtils.isEmpty(model.var.getString(search.getString("name"))) ){
+                                    submitQuery(s);
                                 }
-                            } catch (Exception e) {
-                                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                                return false;
+                            } else if (listView != null) {
+                                ItemAdapter adapter = (ItemAdapter)listView.getAdapter();
+                                adapter.filter(s);
                             }
                             return true;
+                        } catch (Exception e){
+                            return false;
                         }
-                    });
+                    }
+                });
+            } else if (searchView !=null) {
+                searchView.setVisibility(View.GONE);
+            }
+
+
+            if (header.has("menu")) {
+                JSONObject json = header.getJSONObject("menu");
+
+                final MenuItem item = menu.add("Menu");
+                item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
+                // We're going to create a button.
+                json.put("type", "button");
+
+                // if it's an image button, both url and image should work
+                if (json.has("image")) {
+                    json.put("url", json.getString("image"));
                 }
 
+                // let's override the style so the menu button size has a sane dimension
+                JSONObject style;
+                if (json.has("style")) {
+                    style = json.getJSONObject("style");
+                } else {
+                    style = new JSONObject();
+                }
+
+                // For image, limit the height so it doesn't look too big
+                if (json.has("url")) {
+                    style.put("height", JasonHelper.pixels(this, "8", "vertical"));
+                }
+
+                json.put("style", style);
+
+                // Now creating the menuButton and itemview
+                FrameLayout itemView;
+                View menuButton;
+                if (item.getActionView() == null) {
+                    // Create itemView if it doesn't exist yet
+                    itemView = new FrameLayout(this);
+                    menuButton = JasonComponentFactory.build(null, json, null, JasonViewActivity.this);
+                    JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
+                    itemView.addView(menuButton);
+                    item.setActionView(itemView);
+                } else {
+                    // Reuse the itemView if it already exists
+                    itemView = (FrameLayout) item.getActionView();
+                    menuButton = itemView.getChildAt(0);
+                    JasonComponentFactory.build(menuButton, json, null, JasonViewActivity.this);
+                }
+
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                menuButton.setLayoutParams(lp);
+
+                // Set padding for the image menu button
+                if (json.has("image")) {
+                    int padding = (int) JasonHelper.pixels(this, "15", "vertical");
+                    itemView.setPadding(padding, padding, padding, padding);
+                }
+
+                if (json.has("badge")) {
+                    String badge_text = "";
+                    JSONObject badge = json.getJSONObject("badge");
+                    if(badge.has("text")) {
+                        badge_text = badge.get("text").toString();
+                    }
+                    JSONObject badge_style;
+                    if (badge.has("style")) {
+                        badge_style = badge.getJSONObject("style");
+                    } else {
+                        badge_style = new JSONObject();
+                    }
+
+                    int color = JasonHelper.COLOR_WHITE;
+                    int background = JasonHelper.parse_color("#ff0000");
+
+                    if(badge_style.has("color")) color = JasonHelper.parse_color(badge_style.getString("color"));
+                    if(badge_style.has("background")) background = JasonHelper.parse_color(badge_style.getString("background"));
+
+                    MaterialBadgeTextView v = new MaterialBadgeTextView(this);
+                    v.setBackgroundColor(background);
+                    v.setTextColor(color);
+                    v.setText(badge_text);
+
+                    FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+                    //layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
+                    int left = (int)JasonHelper.pixels(this, String.valueOf(30), "horizontal");
+                    int top = (int)JasonHelper.pixels(this, String.valueOf(-3), "vertical");
+                    if (badge_style.has("left")) {
+                        left = (int)JasonHelper.pixels(this, badge_style.getString("left"), "horizontal");
+                    }
+                    if (badge_style.has("top")) {
+                        top = (int)JasonHelper.pixels(this, String.valueOf(parseInt(badge_style.getString("top"))), "vertical");
+                    }
+                    layoutParams.setMargins(left,top,0,0);
+                    itemView.addView(v);
+                    v.setLayoutParams(layoutParams);
+                    itemView.setClipChildren(false);
+                    itemView.setClipToPadding(false);
+                }
+
+                item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        try {
+                            JSONObject header = model.rendered.getJSONObject("header");
+                            if (header.has("menu")) {
+                                if (header.getJSONObject("menu").has("action")) {
+                                    call(header.getJSONObject("menu").getJSONObject("action").toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                                } else if (header.getJSONObject("menu").has("href")) {
+                                    JSONObject action = new JSONObject().put("type", "$href").put("options", header.getJSONObject("menu").getJSONObject("href"));
+                                    call(action.toString(), new JSONObject().toString(), "{}", JasonViewActivity.this);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                        }
+                        return true;
+                    }
+                });
             }
         }catch(Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -2778,9 +1771,10 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             // Default title values
             toolbar.setTitle("");
             toolbar.setTitleSize(20);
+            toolbar.setContentDescription(null);
 
             // Global font
-            if(header.has("style")) {
+            if (header.has("style")) {
                 toolbar.setTitleFont(header.getJSONObject("style"));
             }
 
@@ -2812,8 +1806,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             else if (align.equals("left")) {
                                 toolbar.setAlignment(Gravity.LEFT);
                             }
-                        } catch (JSONException e) {
-                        }
+                        } catch (JSONException e) { }
 
                         // offsets
                         int leftOffset = 0;
@@ -2821,13 +1814,11 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                         try {
                             leftOffset = (int)JasonHelper.pixels(JasonViewActivity.this, style.getString("left"), "horizontal");
-                        } catch (JSONException e) {
-                        }
+                        } catch (JSONException e) { }
 
                         try {
                             topOffset = (int)JasonHelper.pixels(JasonViewActivity.this, style.getString("top"), "vertical");
-                        } catch (JSONException e) {
-                        }
+                        } catch (JSONException e) { }
 
                         toolbar.setLeftOffset(leftOffset);
                         toolbar.setTopOffset(topOffset);
@@ -2857,12 +1848,16 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                             }
                         }
 
+                        if (t.has("alt")) {
+                            toolbar.setContentDescription(t.getString("alt") + ", Header");
+                        }
+
                         toolbar.setImageHeight(height);
                         toolbar.setImageWidth(width);
                         toolbar.setImage(c);
                     }
                     // label options
-                    else if(type.equalsIgnoreCase("label")){
+                    else if (type.equalsIgnoreCase("label")) {
                         String text = ((JSONObject) title).getString("text");
 
                         if (style != null) {
@@ -2877,15 +1872,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
                         toolbar.setTitle(text);
 
-                        if(logoView != null){
+                        if (logoView != null) {
                             toolbar.removeView(logoView);
                             logoView = null;
                         }
-                    } else {
-                        if(logoView != null){
-                            toolbar.removeView(logoView);
-                            logoView = null;
-                        }
+                    } else if (logoView != null) {
+                        toolbar.removeView(logoView);
+                        logoView = null;
                     }
                 } else {
                     String simple_title = header.get("title").toString();
@@ -2895,11 +1888,9 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                         logoView = null;
                     }
                 }
-            } else {
-                if(logoView != null){
-                    toolbar.removeView(logoView);
-                    logoView = null;
-                }
+            } else if (logoView != null) {
+                toolbar.removeView(logoView);
+                logoView = null;
             }
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -2916,23 +1907,17 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
      * @param listener
      */
     public void addListViewOnItemTouchListener(RecyclerView.OnItemTouchListener listener) {
-        if(!listViewOnItemTouchListeners.contains(listener)) {
-            listViewOnItemTouchListeners.add(listener);
-            listView.addOnItemTouchListener(listener);
-        }
+        currentFragment().addListViewOnItemTouchListener(listener);
     }
-
 
     /**
      * Removes all item touch listeners attached to this activity
      * Called when the activity
      */
     public void removeListViewOnItemTouchListeners() {
-        for (RecyclerView.OnItemTouchListener listener: listViewOnItemTouchListeners) {
-            listView.removeOnItemTouchListener(listener);
-            listViewOnItemTouchListeners.remove(listener);
-        }
+        currentFragment().removeListViewOnItemTouchListeners();
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {

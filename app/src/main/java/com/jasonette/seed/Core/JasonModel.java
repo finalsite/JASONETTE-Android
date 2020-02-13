@@ -8,6 +8,7 @@ import android.util.Log;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Launcher.Launcher;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import androidx.recyclerview.widget.RecyclerView;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -43,6 +45,7 @@ public class JasonModel{
     public JSONObject params;   // $params
     public JSONObject session;
     public JSONObject action;   // latest executed action
+    public JSONObject onError;  // error callback for current action
 
     public OkHttpClient client;
 
@@ -51,6 +54,11 @@ public class JasonModel{
         this.view = view;
         this.client = ((Launcher)view.getApplication()).getHttpClient(0);
         this.offline = false;
+        if (intent.hasExtra("onError")) {
+            try {
+                this.onError = new JSONObject(intent.getStringExtra("onError"));
+            } catch (JSONException e) { }
+        }
 
         // $params
         this.params = new JSONObject();
@@ -78,6 +86,18 @@ public class JasonModel{
         }
 
         // session
+        refresh_session();
+
+        try {
+            JSONObject v = new JSONObject();
+            v.put("url", this.url);
+            ((Launcher)(this.view.getApplicationContext())).setEnv("view", v);
+        } catch (Exception e){
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        };
+    }
+
+    private void refresh_session() {
         SharedPreferences session_pref = view.getSharedPreferences("session", 0);
         this.session = new JSONObject();
         try {
@@ -90,17 +110,7 @@ public class JasonModel{
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         };
-
-        try {
-            JSONObject v = new JSONObject();
-            v.put("url", this.url);
-            ((Launcher)(this.view.getApplicationContext())).setEnv("view", v);
-        } catch (Exception e){
-            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-        };
     }
-
-
 
     public void fetch() {
         if(url.startsWith("file://")) {
@@ -133,12 +143,15 @@ public class JasonModel{
 
     private void fetch_http(String url){
         try{
+            final JasonModel self = this;
+            self.view.showProgressBar();
+
             Request request;
             Request.Builder builder = new Request.Builder();
-
             // SESSION HANDLING
 
             // Attach Header from Session
+            refresh_session(); // make sure we pick up any session changes
             if(session != null && session.has("header")) {
                 Iterator<?> keys = session.getJSONObject("header").keys();
                 while (keys.hasNext()) {
@@ -165,24 +178,44 @@ public class JasonModel{
                     .url(url)
                     .build();
 
-
-
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    if(!offline) fetch_local("file://error.json");
+                    if(!offline) {
+                        if (self.onError != null) {
+                            self.view.handleErrorCallback();;
+                        } else {
+                            if (isOnline()) {
+                                fetch_local("file://error.json");
+                            } else {
+                                fetch_local("file://offline.json");
+                            }
+                        }
+                    }
+                    self.view.hideProgressBar();
                     e.printStackTrace();
                 }
 
                 @Override
                 public void onResponse(Call call, final Response response) throws IOException {
                     if (!response.isSuccessful()) {
-                        if(!offline) fetch_local("file://error.json");
-                    } else {
+                        if(!offline) {
+                            if (self.onError != null) {
+                                self.view.handleErrorCallback();
+                            } else {
+                                if (isOnline()) {
+                                    fetch_local("file://error.json");
+                                } else {
+                                    fetch_local("file://offline.json");
+                                }
+                            }
+                        }
+                    } else if (self.view.model.url.equalsIgnoreCase(call.request().url().toString())){
                         String res = response.body().string();
                         refs = new JSONObject();
                         resolve_and_build(res);
                     }
+                    self.view.hideProgressBar();
                 }
             });
         } catch (Exception e){
@@ -190,7 +223,18 @@ public class JasonModel{
         }
     }
 
+    public boolean isOnline() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        }
+        catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
 
+        return false;
+    }
 
     private void include(String res){
         String regex =  "\"([+@])\"[ ]*:[ ]*\"(([^\"@]+)(@))?([^\"]+)\"";
@@ -226,7 +270,6 @@ public class JasonModel{
 
     private void resolve_and_build(String res){
         try {
-
             jason = new JSONObject(res);
 
             // "include" handling
@@ -251,6 +294,7 @@ public class JasonModel{
                 } else {
                     if (jason.has("$jason")) {
                         view.loaded = false;
+                        view.currentFragment().loaded = false;
                         view.build(jason);
                     } else {
 
@@ -286,7 +330,7 @@ public class JasonModel{
             refs.put("$document", jason);
 
             // parse
-            JasonParser.getInstance(this.view).setParserListener(new JasonParser.JasonParserListener() {
+            JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                 @Override
                 public void onFinished(JSONObject resolved_jason) {
                     try {
@@ -295,8 +339,8 @@ public class JasonModel{
                         Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                     }
                 }
-            });
-            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, this.view);
+            };
+            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, listener, this.view);
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
@@ -320,7 +364,7 @@ public class JasonModel{
             refs.put("$document", jason);
 
             // parse
-            JasonParser.getInstance(this.view).setParserListener(new JasonParser.JasonParserListener() {
+            JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                 @Override
                 public void onFinished(JSONObject resolved_jason) {
                     try {
@@ -329,8 +373,8 @@ public class JasonModel{
                         Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                     }
                 }
-            });
-            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, this.view);
+            };
+            JasonParser.getInstance(this.view).parse("json", refs, to_resolve, listener, this.view);
         } catch (Exception e){
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
@@ -372,5 +416,4 @@ public class JasonModel{
 
         }
     }
-
 }

@@ -3,21 +3,25 @@ package com.jasonette.seed.Component;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Core.JasonViewActivity;
+import com.jasonette.seed.R;
+
 import org.json.JSONObject;
 
 public class JasonTextfieldComponent {
@@ -56,10 +60,8 @@ public class JasonTextfieldComponent {
                     ((EditText)view).setTextSize(Float.parseFloat(style.getString("size")));
                 }
 
-
                 ((EditText)view).setSingleLine();
                 ((EditText)view).setLines(1);
-
 
                 ((EditText)view).setEllipsize(TextUtils.TruncateAt.END);
 
@@ -91,12 +93,25 @@ public class JasonTextfieldComponent {
                     padding_bottom = (int)JasonHelper.pixels(context, style.getString("padding_bottom"), "vertical");
                 }
 
-                view.setPadding(padding_left, padding_top, padding_right, padding_bottom);
+                if (style.has("shadow_border")) {
+                    // need to adjust height and width to account for the drop shadow background
+                    int shadow_padding = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, context.getResources().getDisplayMetrics());
+                    ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+                    layoutParams.height = layoutParams.height + shadow_padding + padding_top + padding_bottom;
+                    layoutParams.width = layoutParams.width + shadow_padding;
+                    view.setBackgroundResource(R.drawable.shadow);
+                    padding_left = padding_left + shadow_padding / 2;
+                }
 
+                view.setPadding(padding_left, padding_top, padding_right, padding_bottom);
 
                 // placeholder
                 if(component.has("placeholder")){
                     ((EditText)view).setHint(component.getString("placeholder"));
+                }
+
+                if(component.has("focus")) {
+                    ((EditText)view).requestFocus();
                 }
 
                 // default value
@@ -119,6 +134,20 @@ public class JasonTextfieldComponent {
                         ((EditText) view).setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
                     } else if(keyboard.equalsIgnoreCase("email")) {
                         ((EditText) view).setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+                    }
+                }
+
+                // keyboard return key
+                if(component.has("return_key")) {
+                    String return_key = component.getString("return_key");
+                    if (return_key.equalsIgnoreCase("go")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_GO);
+                    } else if(return_key.equalsIgnoreCase("next")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_NEXT);
+                    } else if(return_key.equalsIgnoreCase("search")) {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+                    } else {
+                        ((EditText) view).setImeOptions(EditorInfo.IME_ACTION_DONE);
                     }
                 }
 
@@ -156,10 +185,15 @@ public class JasonTextfieldComponent {
                 ((EditText)view).setOnEditorActionListener(new TextView.OnEditorActionListener() {
                     @Override
                     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                        if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_SEARCH) {
                             try {
                                 if(component.has("name")) {
                                     ((JasonViewActivity) context).model.var.put(component.getString("name"), v.getText().toString());
+                                }
+                                if(component.has("action")) {
+                                    Intent intent = new Intent("call");
+                                    intent.putExtra("action", component.getJSONObject("action").toString());
+                                    LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
                                 }
                             } catch (Exception e){
                                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());

@@ -3,6 +3,7 @@ package com.jasonette.seed.Section;
 import android.content.Context;
 import android.widget.LinearLayout;
 import com.jasonette.seed.Helper.JasonHelper;
+
 import org.json.JSONObject;
 
 public class JasonLayout {
@@ -45,12 +46,13 @@ public class JasonLayout {
                         }
                     } catch (Exception e) {
                     }
-                } else {
+                } else if (height == 0) {
                     height = LinearLayout.LayoutParams.WRAP_CONTENT;
                 }
 
-
             } else if (parent.getString("type").equalsIgnoreCase("vertical")) {
+
+                JSONObject parent_style = JasonHelper.style(parent, root_context);
 
                 if (style.has("height")) {
                     try {
@@ -61,8 +63,9 @@ public class JasonLayout {
                         }
                     } catch (Exception e) { }
                 } else {
-                    if(item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space")){
-                        // layouts should have flexible height inside a vertical layout
+                    boolean parent_has_height = parent_style.has("height") || (parent_style.has("ratio") && parent_style.has("width"));
+                    if(parent_has_height && (item_type.equalsIgnoreCase("vertical") || item_type.equalsIgnoreCase("horizontal") || item_type.equalsIgnoreCase("space"))){
+                        // layouts should have flexible height inside a vertical layout (that has a specific height defined)
                         height = 0;
                         weight = 1;
                     } else {
@@ -79,22 +82,25 @@ public class JasonLayout {
                             height = width / ratio;
                         }
                     } catch (Exception e) { }
-                } else {
+                } else if (width == 0) {
                     // in case of vertical layout, all its children, regardless of whether they are layout or components,
                     // should have the width match parent
                     // (Except for images, which will be handled inside JasonImageComponent)
                     width = LinearLayout.LayoutParams.MATCH_PARENT;
                 }
 
-
-
             } else if (parent.getString("type").equalsIgnoreCase("horizontal")) {
                 if (style.has("width")) {
                     try {
-                        width = (int) JasonHelper.pixels(root_context, style.getString("width"), "horizontal");
-                        if (style.has("ratio")) {
-                            Float ratio = JasonHelper.ratio(style.getString("ratio"));
-                            height = width / ratio;
+                        // allow styling to override how the element width is treated / opt out of weighted width
+                        if (style.getString("width").equalsIgnoreCase("auto")) {
+                            width = LinearLayout.LayoutParams.WRAP_CONTENT;
+                        } else {
+                            width = (int) JasonHelper.pixels(root_context, style.getString("width"), "horizontal");
+                            if (style.has("ratio")) {
+                                Float ratio = JasonHelper.ratio(style.getString("ratio"));
+                                height = width / ratio;
+                            }
                         }
                     } catch (Exception e) {
                     }
@@ -113,16 +119,36 @@ public class JasonLayout {
                         }
                     } catch (Exception e) {
                     }
-                } else {
+                } else if (height == 0){
                     height = LinearLayout.LayoutParams.WRAP_CONTENT;
                 }
             }
 
+            if (style.has("max_width")) {
+                float max_width = JasonHelper.pixels(root_context, style.getString("max_width"), "horizontal");
+                if (width > max_width && height > 0) {
+                    float ratioMult = max_width / width;
+                    width = max_width;
+                    height = height * ratioMult;
+                }
+            }
+
+            if (style.has("max_height")) {
+                float max_height = JasonHelper.pixels(root_context, style.getString("max_height"), "vertical");
+                if (height > max_height && width > 0) {
+                    float ratioMult = max_height / height;
+                    height = max_height;
+                    width = width * ratioMult;
+                }
+            }
+
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams((int)width, (int)height);
+            if (style.has("weight")) {
+                weight = style.getInt("weight");
+            }
             if (weight > 0) {
                 layoutParams.weight = weight;
             }
-
 
             return layoutParams;
 

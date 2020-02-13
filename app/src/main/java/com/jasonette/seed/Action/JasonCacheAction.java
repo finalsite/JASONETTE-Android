@@ -26,7 +26,7 @@ public class JasonCacheAction {
             editor.commit();
 
             // Update model
-            ((JasonViewActivity)context).model.cache = new_cache;
+            activity.model.cache = new_cache;
 
             // Execute next
             JasonHelper.next("success", action, new_cache, event, context);

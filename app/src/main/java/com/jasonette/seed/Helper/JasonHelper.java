@@ -5,10 +5,9 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.support.v4.content.LocalBroadcastManager;
-import android.util.DisplayMetrics;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.TypedValue;
-import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.jasonette.seed.Core.JasonViewActivity;
@@ -32,20 +31,28 @@ import timber.log.Timber;
 
 public class JasonHelper {
 
+    public static int COLOR_BLACK = Color.parseColor("#000000");
+    public static int COLOR_WHITE = Color.parseColor("#ffffff");
+
     public static JSONObject style(JSONObject component, Context root_context) {
         JSONObject style = new JSONObject();
+        JasonViewActivity activity = ((JasonViewActivity) root_context);
         try {
             if (component.has("class")) {
                 String style_class_string = component.getString("class");
                 String[] style_classes = style_class_string.split("\\s+");
                 for(int i = 0 ; i < style_classes.length ; i++){
-                    JSONObject astyle = ((JasonViewActivity) root_context).model.jason.getJSONObject("$jason").getJSONObject("head").getJSONObject("styles").getJSONObject(style_classes[i]);
-                    Iterator iterator = astyle.keys();
-                    String style_key;
-                    while (iterator.hasNext()) {
-                        style_key = (String) iterator.next();
-                        style.put(style_key, astyle.get(style_key));
+
+                    if (activity.stylesheet.has(style_classes[i])) {
+                        JSONObject astyle = activity.stylesheet.getJSONObject(style_classes[i]);
+                        Iterator iterator = astyle.keys();
+                        String style_key;
+                        while (iterator.hasNext()) {
+                            style_key = (String) iterator.next();
+                            style.put(style_key, astyle.get(style_key));
+                        }
                     }
+
                 }
             }
         } catch (Exception e){
@@ -85,27 +92,35 @@ public class JasonHelper {
         }
     }
 
-    public static void next(String type, JSONObject action, Object data, final JSONObject event, Context context) {
-        try {
-            if (action.has(type)) {
-                Intent intent = new Intent(type);
-                intent.putExtra("action", action.get(type).toString());
-                intent.putExtra("data", data.toString());
-                intent.putExtra("event", event.toString());
-                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-            } else {
-                // Release everything and finish
-                Intent intent = new Intent("call");
-                JSONObject unlock_action = new JSONObject();
-                unlock_action.put("type", "$unlock");
+    public static void next(final String type, final JSONObject action, final Object data, final JSONObject event, final Context context) {
 
-                intent.putExtra("action", unlock_action.toString());
-                intent.putExtra("event", event.toString());
-                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        // make sure this all happens after any UI changes that are in queue (ie. going back in the view stack)
+        ((JasonViewActivity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (action.has(type)) {
+                        Intent intent = new Intent(type);
+                        intent.putExtra("action", action.get(type).toString());
+                        intent.putExtra("data", data.toString());
+                        intent.putExtra("event", event.toString());
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+                    } else {
+                        // Release everything and finish
+                        Intent intent = new Intent("call");
+                        JSONObject unlock_action = new JSONObject();
+                        unlock_action.put("type", "$unlock");
+
+                        intent.putExtra("action", unlock_action.toString());
+                        intent.putExtra("event", event.toString());
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+                    }
+                } catch (Exception e) {
+                    Timber.e(e);
+                }
             }
-        } catch (Exception e) {
-            Timber.e(e);
-        }
+        });
+
     }
 
     /**
@@ -171,19 +186,16 @@ public class JasonHelper {
             String sign = m.group(2);
             Float pixels = Float.parseFloat(m.group(3));
             pixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, pixels, context.getResources().getDisplayMetrics());
-
-            DisplayMetrics displayMetrics = new DisplayMetrics();
-            WindowManager windowmanager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-            windowmanager.getDefaultDisplay().getMetrics(displayMetrics);
+            FrameLayout full_view = ((JasonViewActivity) context).getFragmentContainer();
             float percent_height;
             float percent_width;
             float s;
             if (direction.equalsIgnoreCase("vertical")) {
-                int full = displayMetrics.heightPixels;
+                int full = full_view.getHeight();
                 percent_height = full * percentage / 100;
                 s = percent_height;
             } else {
-                int full = displayMetrics.widthPixels;
+                int full = full_view.getWidth();
                 percent_width = full * percentage / 100;
                 s = percent_width;
             }
@@ -203,14 +215,12 @@ public class JasonHelper {
             float s;
             if (m.matches()) {
                 Float percentage = Float.parseFloat(m.group(1));
-                DisplayMetrics displayMetrics = new DisplayMetrics();
-                WindowManager windowmanager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-                windowmanager.getDefaultDisplay().getMetrics(displayMetrics);
+                FrameLayout full_view = ((JasonViewActivity) context).getFragmentContainer();
                 if (direction.equalsIgnoreCase("vertical")) {
-                    int full = displayMetrics.heightPixels;
+                    int full = full_view.getHeight();
                     s = full * percentage / 100;
                 } else {
-                    int full = displayMetrics.widthPixels;
+                    int full = full_view.getWidth();
                     s = full * percentage / 100;
                 }
                 return s;
@@ -342,7 +352,7 @@ public class JasonHelper {
     // 1. triggers an external Intent
     // 2. attaches a callback with all the payload so that we can pick it up where we left off when the intent returns
     // the callback needs to specify the class name and the method name we wish to trigger after the intent returns
-    public static void dispatchIntent(String name, JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
+    public static int dispatchIntent(String name, JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
         // Generate unique identifier for return value
         // This will be used to name the handlers
         int requestCode;
@@ -384,10 +394,12 @@ public class JasonHelper {
             // it means we are manually going to deal with opening a new Intent
         }
 
+        return requestCode;
+
     }
 
-    public static void dispatchIntent(JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
-        dispatchIntent(String.valueOf((int) (System.currentTimeMillis() % 10000)), action, data, event, context, intent, handler);
+    public static int dispatchIntent(JSONObject action, JSONObject data, JSONObject event, Context context, Intent intent, JSONObject handler) {
+        return dispatchIntent(String.valueOf((int) (System.currentTimeMillis() % 10000)), action, data, event, context, intent, handler);
     }
 
     public static void callback(JSONObject callback, String result, Context context) {

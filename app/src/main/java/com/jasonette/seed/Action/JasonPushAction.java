@@ -18,6 +18,7 @@ import org.json.JSONObject;
 public class JasonPushAction {
     public void register(final JSONObject action, JSONObject data, final JSONObject event, Context context) {
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
+
         if(refreshedToken != null){
             // Token exists => already registered => Immediately trigger $push.onregister
             try {

@@ -12,10 +12,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.ContactsContract;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.fragment.app.DialogFragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.appcompat.app.AlertDialog;
 import android.text.InputType;
 import android.text.format.DateFormat;
 import android.util.Base64;
@@ -37,7 +37,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 
 public class JasonUtilAction {
     private int counter; // general purpose counter;
@@ -59,7 +58,7 @@ public class JasonUtilAction {
                     } else {
                         result = title;
                     }
-                    Snackbar snackbar = Snackbar.make(((JasonViewActivity)context).rootLayout, result, Snackbar.LENGTH_LONG);
+                    Snackbar snackbar = Snackbar.make(((JasonViewActivity) context).getFragmentContainer(), result, Snackbar.LENGTH_LONG);
                     snackbar.show();
                 } catch (Exception e){
                     Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -98,6 +97,7 @@ public class JasonUtilAction {
             public void run() {
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                String ok_title = "OK";
                 try {
                     JSONObject options = new JSONObject();
                     final ArrayList<EditText> textFields = new ArrayList<EditText>();
@@ -105,8 +105,13 @@ public class JasonUtilAction {
                         options = action.getJSONObject("options");
                         String title = options.get("title").toString();
                         String description = options.get("description").toString();
+
                         builder.setTitle(title);
                         builder.setMessage(description);
+
+                        if(options.has("ok_title")) {
+                            ok_title = options.get("ok_title").toString();
+                        }
 
                         if(options.has("form"))
                         {
@@ -146,10 +151,11 @@ public class JasonUtilAction {
 
 
                     }
-                    builder.setPositiveButton("OK",
+                    builder.setPositiveButton(ok_title,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog,
                                                     int which) {
+
                                     try {
                                         if (action.has("success")) {
                                             JSONObject postObject = new JSONObject();
@@ -167,13 +173,17 @@ public class JasonUtilAction {
                                     }
                                 }
                             });
-                    builder.setNeutralButton("CANCEL",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog,
-                                                    int which) {
-                                    JasonHelper.next("error", action, new JSONObject(), event, context);
-                                }
-                            });
+
+                    if(!options.has("hide_cancel")) {
+                        builder.setNeutralButton("CANCEL",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int which) {
+                                        JasonHelper.next("error", action, new JSONObject(), event, context);
+                                    }
+                                });
+                    }
+
                     builder.show();
                 } catch (Exception e) {
                     Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
@@ -181,6 +191,20 @@ public class JasonUtilAction {
             }
         });
     }
+
+    public void redirectToStore(final JSONObject action, final JSONObject data, final JSONObject event, final Context context) {
+        final String appPackageName = context.getPackageName();
+        try {
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+        } catch (android.content.ActivityNotFoundException anfe) {
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+        }
+    }
+
+    public void redirectToSettings(final JSONObject action, final JSONObject data, final JSONObject event, final Context context) {
+        context.startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+    }
+
     public void picker(final JSONObject action, final JSONObject data, final JSONObject event, final Context context){
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override

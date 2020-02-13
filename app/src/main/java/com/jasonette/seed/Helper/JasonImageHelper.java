@@ -10,7 +10,7 @@ import android.util.Log;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 
 import org.json.JSONObject;
@@ -102,11 +102,11 @@ public class JasonImageHelper {
 
                 Glide
                         .with(context)
-                        .load(url)
                         .asBitmap()
+                        .load(url)
                         .into(new SimpleTarget<Bitmap>(width, height) {
                             @Override
-                            public void onResourceReady(Bitmap bitmap, GlideAnimation anim) {
+                            public void onResourceReady(Bitmap bitmap, Transition anim) {
                                 Uri bitmapUri = null;
                                 try {
                                     File file =  new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");

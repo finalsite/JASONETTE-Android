@@ -61,7 +61,7 @@ public class JasonNetworkAction {
                     while (keys.hasNext()) {
                         String key = (String) keys.next();
                         String val = session.getJSONObject("header").getString(key);
-                        builder.addHeader(key, val);
+                        builder.header(key, val);
                     }
                 }
 
@@ -73,11 +73,15 @@ public class JasonNetworkAction {
                         while (keys.hasNext()) {
                             String key = (String) keys.next();
                             String val = header.getString(key);
-                            builder.addHeader(key, val);
+                            builder.header(key, val);
                         }
                     } catch (Exception e) {
 
                     }
+                }
+
+                if (options.has("show_loading") && options.getBoolean("show_loading")) {
+                    ((JasonViewActivity)context).showProgressBar();
                 }
 
                 if(method.equalsIgnoreCase("get")) {
@@ -190,6 +194,7 @@ public class JasonNetworkAction {
                     @Override
                     public void onFailure(Call call, IOException e) {
                         Timber.e(e);
+                        ((JasonViewActivity)context).hideProgressBar();
                         try {
                             if (action.has("error")) {
 
@@ -209,6 +214,7 @@ public class JasonNetworkAction {
 
                     @Override
                     public void onResponse(Call call, final Response response) throws IOException {
+                        ((JasonViewActivity)context).hideProgressBar();
                         if (!response.isSuccessful()) {
                             try {
                                 if (action.has("error")) {

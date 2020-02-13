@@ -5,7 +5,15 @@ import android.util.Log;
 import com.facebook.stetho.Stetho;
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.jasonette.seed.R;
+import com.jasonette.seed.Lib.UserAgentInterceptor;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import timber.log.Timber;
 
@@ -42,12 +50,16 @@ public class DebugLauncher extends Launcher {
     public OkHttpClient getHttpClient(long timeout) {
         if(timeout > 0) {
             return new OkHttpClient.Builder()
+                    .cookieJar(getCookieJar())
                     .readTimeout(timeout, TimeUnit.SECONDS)
                     .writeTimeout(timeout, TimeUnit.SECONDS)
+                    .addNetworkInterceptor(new UserAgentInterceptor("Android Debug Mode"))
                     .addNetworkInterceptor(new StethoInterceptor())
                     .build();
         } else {
             return new OkHttpClient.Builder()
+                    .cookieJar(getCookieJar())
+                    .addNetworkInterceptor(new UserAgentInterceptor("Android Debug Mode"))
                     .addNetworkInterceptor(new StethoInterceptor())
                     .build();
         }

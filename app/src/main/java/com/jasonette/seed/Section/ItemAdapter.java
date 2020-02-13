@@ -1,24 +1,39 @@
 package com.jasonette.seed.Section;
 
 import android.content.Context;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.PagerSnapHelper;
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Core.JasonViewActivity;
+import com.jasonette.seed.Lib.PageIndicatorDecoration;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,7 +58,6 @@ import java.util.Map;
 public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     public static final int DATA = 0;
 
-
     Context context;
     Context root_context;
     ArrayList<JSONObject> items;
@@ -53,7 +67,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     ViewHolderFactory factory = new ViewHolderFactory();
     Boolean isHorizontalScroll = false;
     ImageView backgroundImageView;
-
 
     /********************************************************
      *
@@ -88,9 +101,7 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 }
             } catch (Exception e){ }
         }
-
     }
-
 
     public ItemAdapter(Context root_context, Context context, ArrayList<JSONObject> items) {
         this.items = items;
@@ -140,7 +151,9 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         String stringified_item;
         if(item.has("horizontal_section")){
             try {
-                JSONArray horizontal_section_items = item.getJSONArray("horizontal_section");
+                JSONObject horizontal_section = item.getJSONObject("horizontal_section");
+                JSONArray horizontal_section_items = horizontal_section.getJSONArray("items");
+
                 // assuming that the section would contain at least one item,
                 // we will take the first item from the section and generate the signature
                 JSONObject first_item = horizontal_section_items.getJSONObject(0);
@@ -151,7 +164,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         } else {
             stringified_item = item.toString();
         }
-
 
         // Simplistic way of transforming an item JSON into a generic string, by replacing out all non-structural values
         // - replace out text and url
@@ -181,7 +193,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             // Return the new index;
             return index;
         }
-
     }
 
     @Override
@@ -221,12 +232,15 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }
 
         return viewHolder;
-
     }
 
     @Override
     public void onBindViewHolder(ItemAdapter.ViewHolder viewHolder, int position) {
         JSONObject json = this.items.get(position);
+        if(position == this.items.size() - Math.min(this.items.size()/5, 20)) {
+            ((JasonViewActivity)root_context).simple_trigger("$scroll.end", new JSONObject(), this.context);
+        }
+
         if(json.has("horizontal_section")) {
             // Horizontal Section
             // In this case, the viewHolder is a Recyclerview.
@@ -236,7 +250,17 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
             // Transform JasonArray into ArrayList
             try {
-                horizontalListAdapter.items = JasonHelper.toArrayList(((JSONArray)json.getJSONArray("horizontal_section")));
+                JSONObject horizontal_section = (JSONObject)json.getJSONObject("horizontal_section");
+                if (horizontal_section.has("style")) {
+                    JSONObject style = horizontal_section.getJSONObject("style");
+                    if (style.has("snap")) {
+                        PagerSnapHelper snapHelper = new PagerSnapHelper();
+                        snapHelper.attachToRecyclerView((RecyclerView) viewHolder.itemView);
+                        ((RecyclerView) viewHolder.itemView).addItemDecoration(new PageIndicatorDecoration());
+                    }
+                }
+
+                horizontalListAdapter.items = JasonHelper.toArrayList(horizontal_section.getJSONArray("items"));
             } catch (Exception e) { }
 
             // Update viewholder
@@ -252,6 +276,23 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
     @Override
     public int getItemCount(){
         return this.items.size();
+    }
+
+    // returns position of n-th header in the main items list
+    // jasonette currently fudges headers in as a main item which makes distinguishing sections difficult
+    // using headers is the only consistent way of counting sections
+    public int getHeaderAt(int position) {
+        int header_count = 0;
+        for(int i=0; i < this.items.size() - 1; i++) {
+            JSONObject json = this.items.get(i);
+            if(json.has("isHeader")) {
+                header_count++;
+            }
+            if (header_count > position) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     /********************************************************
@@ -277,10 +318,16 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         private Boolean exists;
         private int index;
 
+        private JSONObject chevron = new JSONObject() {{
+            try {
+                put("type", "image");
+                put("url", "file://chevron-right.png");
+                put("style", new JSONObject("{\"height\": 20, \"width\": 20}"));
+            } catch (JSONException e) { }
+        }};
+
         public ItemAdapter.ViewHolder build(ViewHolder prototype, JSONObject json) {
-
             LinearLayout layout;
-
 
             if (prototype != null) {
                 // Fill
@@ -321,7 +368,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                 return viewHolder;
             }
-
         }
 
         // ContentView is the top level view of a cell.
@@ -337,7 +383,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                     } else {
                         // 1. Create components array
                         JSONArray components = new JSONArray();
-
 
                         // 2. Create a vertical layout and set its components
                         JSONObject wrapper = new JSONObject();
@@ -384,7 +429,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             ViewGroup.LayoutParams layoutParams = (ViewGroup.LayoutParams)layout.getLayoutParams();
                             layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
                         }
-
                     }
                 } else {
                     layout = new LinearLayout(context);
@@ -394,22 +438,94 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
             }
 
             return layout;
-
         }
 
-        class BackgroundImage extends SimpleTarget<GlideDrawable> {
+        class BackgroundImage extends SimpleTarget<Drawable> {
             LinearLayout layout;
-            public BackgroundImage(LinearLayout layout) {
+            int corner_radius;
+            public BackgroundImage(LinearLayout layout, int corner_radius) {
                 this.layout = layout;
+                this.corner_radius = corner_radius;
             }
             @Override
-            public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+            public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
                 this.layout.setBackground(resource);
+
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) this.layout.getLayoutParams();
+                Bitmap backgroundBitmap = drawableToBitmap(resource);
+
+                // if we have a height and width center crop the background image
+                // NOTE: this.layout.getWidth()/getHeight() are not reliable here
+                if(params.height > 0 && params.width > 0) {
+                    backgroundBitmap = scaleCenterCrop(backgroundBitmap, params.width, params.height);
+                }
+
+                if (this.corner_radius > 0) {
+                    RoundedBitmapDrawable bitmapDrawable = RoundedBitmapDrawableFactory.create(context.getResources(), backgroundBitmap);
+                    bitmapDrawable.setCornerRadius(corner_radius);
+                    this.layout.setBackground(bitmapDrawable);
+                } else {
+                    this.layout.setBackground(new BitmapDrawable(context.getResources(), backgroundBitmap));
+                }
+            }
+
+            private Bitmap drawableToBitmap (Drawable drawable) {
+                Bitmap bitmap = null;
+
+                if (drawable instanceof BitmapDrawable) {
+                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                    if(bitmapDrawable.getBitmap() != null) {
+                        return bitmapDrawable.getBitmap();
+                    }
+                }
+
+                if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+                    bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+                } else {
+                    bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                }
+
+                Canvas canvas = new Canvas(bitmap);
+                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                drawable.draw(canvas);
+                return bitmap;
+            }
+
+            public Bitmap scaleCenterCrop(Bitmap source, int newWidth, int newHeight) {
+                int sourceWidth = source.getWidth();
+                int sourceHeight = source.getHeight();
+
+                // Compute the scaling factors to fit the new height and width, respectively.
+                // To cover the final image, the final scaling will be the bigger
+                // of these two.
+                float xScale = (float) newWidth / sourceWidth;
+                float yScale = (float) newHeight / sourceHeight;
+                float scale = Math.max(xScale, yScale);
+
+                // Now get the size of the source bitmap when scaled
+                float scaledWidth = scale * sourceWidth;
+                float scaledHeight = scale * sourceHeight;
+
+                // Let's find out the upper left coordinates if the scaled bitmap
+                // should be centered in the new size give by the parameters
+                float left = (newWidth - scaledWidth) / 2;
+                float top = (newHeight - scaledHeight) / 2;
+
+                // The target rectangle for the new, scaled version of the source bitmap will now
+                // be
+                RectF targetRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
+
+                // Finally, we create a new bitmap of the specified size and draw our new,
+                // scaled bitmap onto it.
+                Bitmap dest = Bitmap.createBitmap(newWidth, newHeight, source.getConfig());
+                Canvas canvas = new Canvas(dest);
+                canvas.drawBitmap(source, null, targetRect, null);
+
+                return dest;
             }
         }
 
-        public LinearLayout buildLayout(LinearLayout layout, JSONObject item, JSONObject parent, int level) {
-
+        public LinearLayout buildLayout(final LinearLayout layout, JSONObject item, JSONObject parent, int level) {
             if (exists) {
                 try {
                     JSONArray components = item.getJSONArray("components");
@@ -421,12 +537,19 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                             if (i > 0) {
                                 add_spacing(childLayout, item, item.getString("type"));
                             }
+
+                            attach_layout_actions(childLayout, component);
+
                         } else {
                             View child_component = buildComponent(component, item);
                             if (i > 0) {
                                 add_spacing(child_component, item, item.getString("type"));
                             }
                         }
+                    }
+                    // If we reach this conditional then we want to add the chevron image because it's a navigation section
+                    if (item.getString("type").equalsIgnoreCase("horizontal") && item.has("href")) {
+                        buildComponent(chevron, item);
                     }
                 } catch (JSONException e) {
 
@@ -455,7 +578,10 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         // horizontal layout
                         layout.setOrientation(LinearLayout.HORIZONTAL);
                         components = item.getJSONArray("components");
-
+                        // If we reach this conditional then we want to add the chevron image because it's a navigation section
+                        if (item.has("href")) {
+                            components.put(chevron);
+                        }
                     }
 
                     // set width and height
@@ -497,31 +623,30 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
 
                     // background
                     if (style.has("background")) {
-                        if(level == 0) {
-                            // top level. allow image background
-                            String background = style.getString("background");
-                            if (background.matches("(file|http[s]?):\\/\\/.*")) {
-                                JSONObject c = new JSONObject();
-                                c.put("url", background);
-                                DiskCacheStrategy cacheStrategy = DiskCacheStrategy.RESULT;
-                                // gif doesn't work with RESULT cache strategy
-                                // TODO: Check with Glide V4
-                                if (background.matches(".*\\.gif")) {
-                                    cacheStrategy = DiskCacheStrategy.SOURCE;
-                                }
-                                Glide.with(root_context)
-                                        .load(JasonImageComponent.resolve_url(c, root_context))
-                                        .diskCacheStrategy(cacheStrategy)
-                                        .into(new BackgroundImage(layout));
+
+                        String background = style.getString("background");
+                        final int corner_radius = style.has("corner_radius") ? (int) JasonHelper.pixels(root_context, style.getString("corner_radius"), type) : 0;
+                        if (background.matches("(file|http[s]?):\\/\\/.*")) {
+                            JSONObject c = new JSONObject();
+                            c.put("url", background);
+                            DiskCacheStrategy cacheStrategy = DiskCacheStrategy.AUTOMATIC;
+                            Glide.with(root_context)
+                                    .load(JasonImageComponent.resolve_url(c, root_context))
+                                    .diskCacheStrategy(cacheStrategy)
+                                    .into(new BackgroundImage(layout, corner_radius));
+                        } else {
+                            // plain background
+                            if (corner_radius > 0) {
+                                Bitmap backgroundColor = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+                                backgroundColor.eraseColor(JasonHelper.parse_color(style.getString("background")));
+                                RoundedBitmapDrawable bitmapDrawable = RoundedBitmapDrawableFactory.create(root_context.getResources(), backgroundColor);
+                                bitmapDrawable.setCornerRadius(corner_radius);
+                                layout.setBackground(bitmapDrawable);
                             } else {
-                                // plain background
                                 layout.setBackgroundColor(JasonHelper.parse_color(style.getString("background")));
                             }
-                        } else {
-                            layout.setBackgroundColor(JasonHelper.parse_color(style.getString("background")));
                         }
                     }
-
 
                     // spacing
                     for (int i = 0; i < components.length(); i++) {
@@ -530,10 +655,12 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         if (component_type.equalsIgnoreCase("vertical") || component_type.equalsIgnoreCase("horizontal")) {
                             // the child is also a layout
                             LinearLayout child_layout = buildLayout(new LinearLayout(context), component, item, ++level);
+
                             layout.addView(child_layout);
                             if (i > 0) {
                                 add_spacing(child_layout, item, type);
                             }
+                            attach_layout_actions(child_layout, component);
                             // From item1, start adding margin-top (item0 shouldn't have margin-top)
                         } else {
                             View child_component = buildComponent(component, item);
@@ -556,8 +683,103 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         }
                     }
 
+                    if (style.has("corner_radius") && !style.has("shadow_border")) {
+                        float corner = JasonHelper.pixels(root_context, style.getString("corner_radius"), "horizontal");
+                        int color = ContextCompat.getColor(root_context, android.R.color.transparent);
+                        GradientDrawable cornerShape = new GradientDrawable();
+                        cornerShape.setShape(GradientDrawable.RECTANGLE);
+                        if (style.has("background") && !style.getString("background").matches("(file|http[s]?):\\/\\/.*")) {
+                            color = JasonHelper.parse_color(style.getString("background"));
+                        }
+                        cornerShape.setColor(color);
+                        cornerShape.setCornerRadius(corner);
+
+                        // border + corner_radius handling
+                        if (style.has("border_width")){
+                            int border_width = (int)JasonHelper.pixels(root_context, style.getString("border_width"), "horizontal");
+                            if(border_width > 0){
+                                int border_color;
+                                if (style.has("border_color")){
+                                    border_color = JasonHelper.parse_color(style.getString("border_color"));
+                                } else {
+                                    border_color = JasonHelper.COLOR_BLACK;
+                                }
+                                cornerShape.setStroke(border_width, border_color);
+                            }
+                        }
+                        cornerShape.invalidateSelf();
+                        layout.setBackground(cornerShape);
+                        layout.setClipToOutline(true);
+                    } else {
+                        // border handling (no corner radius)
+                        if (style.has("border_width")){
+                            int border_width = (int)JasonHelper.pixels(root_context, style.getString("border_width"), "horizontal");
+                            if(border_width > 0){
+                                int border_color;
+                                if (style.has("border_color")){
+                                    border_color = JasonHelper.parse_color(style.getString("border_color"));
+                                } else {
+                                    border_color = JasonHelper.COLOR_BLACK;
+                                }
+                                GradientDrawable cornerShape = new GradientDrawable();
+                                cornerShape.setStroke(border_width, border_color);
+                                cornerShape.invalidateSelf();
+                                layout.setBackground(cornerShape);
+                            }
+                        }
+                    }
 
                     layout.requestLayout();
+
+                    // accessibility
+
+
+                    layout.setFocusable(false);
+                    if(item.has("alt")) {
+                        String content_description = item.getString("alt");
+
+                        if(item.has("label")) {
+                            content_description = item.getString("label").concat(", ").concat(content_description);
+                        }
+
+                        if (content_description.length() == 0) {
+                            content_description = null;
+                        } else {
+                            layout.setFocusable(true);
+                        }
+                        layout.setContentDescription(content_description);
+                    }
+
+                    if(item.has("hide_accessible_children")) {
+                        for (int i = 0; i < layout.getChildCount(); i++) {
+                            View v = layout.getChildAt(i);
+                            v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+                        }
+                    }
+
+                    final String role = item.has("role") ? item.getString("role") : "";
+                    final Boolean hasAction = item.has("action") || item.has("href");
+
+                    layout.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                        public void onInitializeAccessibilityNodeInfo(View host,
+                                                                      AccessibilityNodeInfo info) {
+                            super.onInitializeAccessibilityNodeInfo(host, info);
+                            // Set some other information.
+                            info.setSelected(role.contains("selected"));
+                            info.setClickable(role.contains("button"));
+                            info.setCheckable(role.contains("checkbox"));
+                            info.setChecked(role.contains("checked"));
+                            if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.setHeading(role.contains("header"));
+                            }
+
+                            // if there is no action remove the default action that indicates there is one
+                            if (!hasAction) {
+                                info.getActionList().removeAll(info.getActionList());
+                            }
+                        }
+                    });
+
 
                 } catch (JSONException e) {
 
@@ -567,7 +789,6 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
         }
 
         public View buildComponent(JSONObject component, JSONObject parent) {
-
             View view;
 
             JSONObject style = JasonHelper.style(component, root_context);
@@ -582,8 +803,37 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 this.subviews.add(view);
                 return view;
             }
+        }
 
-
+        // handle adding or removing click handlers on recycled nested layouts
+        private void attach_layout_actions(View view, JSONObject item) {
+            // allow nested layouts to handle actions
+            if (item.has("action") || item.has("href")) {
+                view.setClickable(true);
+                view.setTag(item);
+                View.OnClickListener clickListener = new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        JSONObject item = (JSONObject) view.getTag();
+                        try {
+                            if (item.has("action")) {
+                                JSONObject action = item.getJSONObject("action");
+                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                            } else if (item.has("href")) {
+                                JSONObject href = item.getJSONObject("href");
+                                JSONObject action = new JSONObject().put("type", "$href").put("options", href);
+                                ((JasonViewActivity) root_context).call(action.toString(), new JSONObject().toString(), "{}", view.getContext());
+                            }
+                        } catch (JSONException e) {
+                            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                        }
+                    }
+                };
+                view.setOnClickListener(clickListener);
+            } else {
+                view.setOnClickListener(null);
+                view.setClickable(false);
+            }
         }
 
         private void add_spacing(View view, JSONObject item, String type) {
@@ -624,7 +874,5 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
         }
-
     }
-
 }

@@ -2,7 +2,7 @@ package com.jasonette.seed.Action;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.jasonette.seed.Core.JasonParser;
@@ -89,7 +89,7 @@ public class JasonReturnAction {
                 } else {
                     options = new JSONObject();
                 }
-                JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                     @Override
                     public void onFinished(JSONObject parsed_options) {
                         try {
@@ -101,8 +101,8 @@ public class JasonReturnAction {
                             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
                         }
                     }
-                });
-                JasonParser.getInstance(context).parse("json", data, options, context);
+                };
+                JasonParser.getInstance(context).parse("json", data, options, listener, context);
             } catch (Exception e){
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }

@@ -2,16 +2,17 @@ package com.jasonette.seed.Component;
 
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
+import androidx.core.content.ContextCompat;
+
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
-import com.jasonette.seed.R;
 import com.jasonette.seed.Section.JasonLayout;
 
 import org.json.JSONObject;
@@ -114,7 +115,7 @@ public class JasonComponent {
                 padding_bottom = (int)JasonHelper.pixels(root_context, style.getString("padding_bottom"), "vertical");
             }
 
-            if (style.has("corner_radius")) {
+            if (style.has("corner_radius") && !style.has("shadow_border")) {
                 float corner = JasonHelper.pixels(root_context, style.getString("corner_radius"), "horizontal");
                 int color = ContextCompat.getColor(root_context, android.R.color.transparent);
                 GradientDrawable cornerShape = new GradientDrawable();
@@ -133,13 +134,14 @@ public class JasonComponent {
                         if (style.has("border_color")){
                             border_color = JasonHelper.parse_color(style.getString("border_color"));
                         } else {
-                            border_color = JasonHelper.parse_color("#000000");
+                            border_color = JasonHelper.COLOR_BLACK;
                         }
                         cornerShape.setStroke(border_width, border_color);
                     }
                 }
                 cornerShape.invalidateSelf();
                 view.setBackground(cornerShape);
+                view.setClipToOutline(true);
             } else {
                 // border handling (no corner radius)
                 if (style.has("border_width")){
@@ -149,7 +151,7 @@ public class JasonComponent {
                         if (style.has("border_color")){
                             border_color = JasonHelper.parse_color(style.getString("border_color"));
                         } else {
-                            border_color = JasonHelper.parse_color("#000000");
+                            border_color = JasonHelper.COLOR_BLACK;
                         }
                         GradientDrawable cornerShape = new GradientDrawable();
                         cornerShape.setStroke(border_width, border_color);
@@ -162,6 +164,42 @@ public class JasonComponent {
             }
 
             view.setPadding(padding_left, padding_top, padding_right, padding_bottom);
+
+            if(component.has("alt")) {
+                String content_description = component.getString("alt");
+
+                if (content_description.length() == 0) {
+                    view.setContentDescription(null);
+                    view.setFocusable(false);
+                    view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                } else {
+                    view.setContentDescription(content_description);
+                }
+            }
+
+            final String role = component.has("role") ? component.getString("role") : "";
+            final Boolean hasAction = !component.has("action") && !component.has("href");
+
+            view.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                public void onInitializeAccessibilityNodeInfo(View host,
+                                                              AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(host, info);
+                    // Set some other information.
+                    info.setSelected(role.contains("selected"));
+                    info.setClickable(role.contains("button"));
+                    info.setCheckable(role.contains("checkbox"));
+                    info.setChecked(role.contains("checked"));
+                    if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        info.setHeading(role.contains("header"));
+                    }
+
+                    // if there is no action remove the default action that indicates there is one
+                    if (hasAction) {
+                        info.getActionList().removeAll(info.getActionList());
+                    }
+                }
+            });
+
             return view;
 
         } catch (Exception e){
@@ -184,7 +222,7 @@ public class JasonComponent {
                     } else {
                         // NONE Explicitly stated.
                         // Need to bubble up all the way to the root viewholder.
-                        View cursor = view;
+                        View cursor = v;
                         while(cursor.getParent() != null) {
                             JSONObject item = (JSONObject)(((View)cursor.getParent()).getTag());
                             if (item!=null && (item.has("action") || item.has("href"))) {

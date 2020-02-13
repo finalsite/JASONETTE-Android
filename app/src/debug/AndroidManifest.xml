@@ -3,6 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.jasonette.seed">
 
+    <!-- Allows unlocking your device and activating its screen so UI tests can succeed -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!-- Strip away maxSdkVersion -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:remove="android:maxSdkVersion"/>
+    <!-- Allows for storing and retrieving screenshots -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <!-- Allows changing locales -->
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" tools:ignore="ProtectedPermissions" />
+
     <application
         android:name=".Launcher.DebugLauncher"
         android:allowBackup="true"
@@ -11,10 +25,17 @@
         android:supportsRtl="true"
         tools:replace="android:name"
         android:theme="@style/AppTheme">
-        <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" >
+
+        <activity android:name=".Core.SplashActivity" android:theme="@style/SplashTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
             </intent-filter>
 
             <!-- Uncomment below intent-filter to support custom url schemes -->
@@ -42,8 +63,12 @@
             android:process=":cwac_cam2"
             android:theme="@style/CameraTheme"/>
 
-        <!-- Uncomment below to support push notification -->
+        <!-- Uncomment below line and add your Google Maps API key -->
         <!--
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="YOUR GOOGLE MAPS API KEY HERE"/>
+        -->
+
+        <!-- Uncomment below to support push notification -->
         <service
             android:name=".Service.push.JasonPushRegisterService">
             <intent-filter>
@@ -56,13 +81,7 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
-        -->
 
-
-        <!-- Uncomment below line and add your Google Maps API key -->
-        <!--
-        <meta-data android:name="com.google.android.geo.API_KEY" android:value="YOUR GOOGLE MAPS API KEY HERE"/>
-        -->
     </application>
 
 </manifest>

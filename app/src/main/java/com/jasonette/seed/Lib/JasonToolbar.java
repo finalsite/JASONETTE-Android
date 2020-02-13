@@ -2,8 +2,8 @@ package com.jasonette.seed.Lib;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.Toolbar;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.widget.ImageView;
@@ -92,6 +92,13 @@ public class JasonToolbar extends Toolbar {
             addView(logoView);
         }
 
+        // older phones with different aspect ratios than what is common today can sometimes end up making the
+        // imageWidth be the same as the device's pixel width, and because of various issues with the toolbar sizing
+        // and it's control over the images placed inside of it we need to maintain ~ 60 pixels of space for it to
+        // not bleed out or not center properly
+        if (getResources().getDisplayMetrics().widthPixels - imageWidth < 60) {
+            imageWidth = getResources().getDisplayMetrics().widthPixels - 60;
+        }
         // manage positioning
         Toolbar.LayoutParams params = new Toolbar.LayoutParams(imageWidth, imageHeight);
         params.gravity = (alignment == -1) ? Gravity.CENTER : alignment;
@@ -101,6 +108,7 @@ public class JasonToolbar extends Toolbar {
 
         // load image with glide
         Glide.with(getContext())
+                .asDrawable()
                 .load(JasonImageComponent.resolve_url(url, getContext()))
                 .into(logoView);
     }

@@ -3,7 +3,7 @@ package com.jasonette.seed.Service.agent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -460,7 +460,7 @@ public class JasonAgentService {
                                     ev.put("$jason", u);
                                     context.model.set("state", ev);
 
-                                    JasonParser.getInstance(context).setParserListener(new JasonParser.JasonParserListener() {
+                                    JasonParser.JasonParserListener listener = new JasonParser.JasonParserListener() {
                                        @Override
                                        public void onFinished(JSONObject reduced_action) {
                                            synchronized (notifier) {
@@ -468,8 +468,8 @@ public class JasonAgentService {
                                                notifier.notify();
                                            }
                                        }
-                                   });
-                                    JasonParser.getInstance(context).parse("json", ((JasonViewActivity)context).model.state, resolved_action, context);
+                                    };
+                                    JasonParser.getInstance(context).parse("json", ((JasonViewActivity)context).model.state, resolved_action, listener, context);
 
                                     synchronized (notifier) {
                                         while (notifier.get() == null) {
