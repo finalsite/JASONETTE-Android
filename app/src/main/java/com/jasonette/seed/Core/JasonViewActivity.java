@@ -41,6 +41,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -167,6 +168,13 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     @Override
     public void onBackPressed() {
         hideProgressBar(); // When a user navigates back the view should be loaded already so we want to hide the loading wheel
+
+        // hide the keyboard if its there
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
 
         FragmentManager fragmentManager = getSupportFragmentManager();
         if (fragmentManager.getFragments().size() == MINIMUM_FRAGMENTS) {
