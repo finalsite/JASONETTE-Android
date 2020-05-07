@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.Environment;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
@@ -23,6 +24,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
 import okhttp3.CookieJar;
 import okhttp3.OkHttpClient;
 import com.jasonette.seed.BuildConfig;
@@ -45,7 +48,8 @@ public class Launcher extends Application {
     private JSONObject models;
     public JSONObject services;
     private static Context currentContext;
-    private CookieJar cookieJar;
+    private OkHttpClient httpClient;
+    private OkHttpClient httpClientWithTimeout;
 
     public void call(String serviceName, String methodName, JSONObject action, Context context) {
         try {
@@ -354,23 +358,22 @@ public class Launcher extends Application {
     }
 
     public OkHttpClient getHttpClient(long timeout) {
-        if(timeout > 0) {
-            return new OkHttpClient.Builder()
-                    .cookieJar(getCookieJar())
-                    .writeTimeout(timeout, TimeUnit.SECONDS)
-                    .readTimeout(timeout, TimeUnit.SECONDS)
+        if(httpClient == null) {
+            File cacheFile = new File(getCacheDir().getAbsolutePath(), "HttpCache");
+            httpClient = new OkHttpClient.Builder()
+                    .cache(new Cache(cacheFile, 10 * 1024 * 1024))
+                    .cookieJar(new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(getCurrentContext())))
                     .addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3"))
                     .build();
-
-        } else {
-            return new OkHttpClient.Builder().cookieJar(getCookieJar()).addNetworkInterceptor(new UserAgentInterceptor("Android OKHTTP3")).build();
         }
-    }
 
-    public CookieJar getCookieJar() {
-        if (cookieJar == null) {
-            cookieJar = new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(getCurrentContext()));
+        if(timeout > 0) {
+            return httpClient.newBuilder()
+                    .writeTimeout(timeout, TimeUnit.SECONDS)
+                    .readTimeout(timeout, TimeUnit.SECONDS)
+                    .build();
         }
-        return cookieJar;
+
+        return httpClient;
     }
 }

@@ -46,23 +46,4 @@ public class DebugLauncher extends Launcher {
         Timber.i("Initialised Stetho debugging"+getEnv());
     }
 
-    @Override
-    public OkHttpClient getHttpClient(long timeout) {
-        if(timeout > 0) {
-            return new OkHttpClient.Builder()
-                    .cookieJar(getCookieJar())
-                    .readTimeout(timeout, TimeUnit.SECONDS)
-                    .writeTimeout(timeout, TimeUnit.SECONDS)
-                    .addNetworkInterceptor(new UserAgentInterceptor("Android Debug Mode"))
-                    .addNetworkInterceptor(new StethoInterceptor())
-                    .build();
-        } else {
-            return new OkHttpClient.Builder()
-                    .cookieJar(getCookieJar())
-                    .addNetworkInterceptor(new UserAgentInterceptor("Android Debug Mode"))
-                    .addNetworkInterceptor(new StethoInterceptor())
-                    .build();
-        }
-    }
-
 }

@@ -994,7 +994,7 @@ public class JasonFragment extends Fragment {
                 JSONObject data = addToObject("$jason", data_string);
 
                 // call next
-                call(action_string, data.toString(), event_string, getContext());
+                    call(action_string, data.toString(), event_string, getContext());
             } catch (Exception e){
                 Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
             }
@@ -1045,6 +1045,12 @@ public class JasonFragment extends Fragment {
     private JSONObject addToObject(String prop, String json_data) {
         JSONObject data = new JSONObject();
         try {
+
+            // check if this was already wrapped, this can happen when data is passed around lambda functions
+            if(json_data.trim().startsWith("{\"$jason\":")){
+                return new JSONObject(json_data);
+            }
+
             // Detect if the result is JSONObject, JSONArray, or String
             if(json_data.trim().startsWith("[")) {
                 // JSONArray
@@ -1067,6 +1073,27 @@ public class JasonFragment extends Fragment {
      * JASON CORE ACTION API
      *
      ************************************************************/
+
+    public void setTabBarBadge(final JSONObject action, JSONObject data, final JSONObject event, final Context context) {
+
+        ((JasonViewActivity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    if(action.has("options")){
+                        JSONObject options = action.getJSONObject("options");
+                        ((JasonViewActivity) context).bottomNavigation.setNotification(options.getString("text"), options.getInt("index"));
+                    }
+                    JasonHelper.next("success", action, new JSONObject(), event, context);
+
+                } catch (Exception e){
+                    Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                    JasonHelper.next("error", action, new JSONObject(), new JSONObject(), context);
+                }
+            }
+        });
+
+    }
 
     /**
      * Renders a template using data

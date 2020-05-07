@@ -76,6 +76,7 @@
             <!--android:theme="@style/CameraTheme"/>-->
 
         <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="barcode"/>
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="default"/>
 
         <!-- Uncomment below line and add your Google Maps API key -->
         <!--
