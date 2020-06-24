@@ -37,5 +37,7 @@ ehthumbs.db
 Thumbs.db
 app/app-release.apk
 app/google-services.json
+app/src/main/res/drawable-*
 app/src/main/res/mipmap-*
 app/src/main/ic_launcher-web.png
+app/src/main/ic_launcher-playstore.png
