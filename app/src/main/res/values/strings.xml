@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Finalsite Administrator</string>
+    <string name="app_name">Finalsite Academy</string>
     <string name="url">file://splash_screen.json</string>
     <string name="launch">file://preload.json</string>
 </resources>

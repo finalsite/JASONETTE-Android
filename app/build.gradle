@@ -3,11 +3,11 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.finalsite.notificationproof"
+        applicationId "com.finalsite.finalsiteacademy2"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 41018
-        versionName "4.10.18"
+        versionCode 4100400
+        versionName "4.10.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

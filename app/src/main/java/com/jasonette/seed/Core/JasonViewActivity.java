@@ -2,6 +2,8 @@ package com.jasonette.seed.Core;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -83,6 +85,8 @@ import static com.bumptech.glide.Glide.with;
 import static java.lang.Integer.parseInt;
 
 public class JasonViewActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+    public static final String CHANNEL_ID_DEFAULT = "default";
+    public static final String CHANNEL_ID_LOW = "low";
     private JasonToolbar toolbar;
     private RecyclerView listView;
     public String url;
@@ -100,7 +104,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     private SparseArray<AHBottomNavigationItem> bottomNavigationItems;
     public HashMap<String, Object> modules;
     public JasonVisionService cameraManager;
-    private AHBottomNavigation bottomNavigation;
+    public AHBottomNavigation bottomNavigation;
     private LinearLayout footerInput;
     private View footer_input_textfield;
     private SearchView searchView;
@@ -121,6 +125,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        createNotificationChannel();
 
         loaded = false;
         event_queue = new ArrayList<>();
@@ -151,6 +157,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
             call(getIntent().getExtras().getString("action"), "{}", "{}", this);
         }
 
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID_DEFAULT, "Important Updates", NotificationManager.IMPORTANCE_HIGH);
+            notificationManager.createNotificationChannel(channel);
+
+            channel = new NotificationChannel("low", "Reminders", NotificationManager.IMPORTANCE_MIN);
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 
     public void shouldDisplayHomeUp() {
@@ -575,6 +593,18 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
      * JASON CORE ACTION API
      *
      ************************************************************/
+
+    public void setTabBarBadge(final JSONObject action, JSONObject data, JSONObject event, Context context) {
+        try{
+            if(action.has("options")){
+                JSONObject options = action.getJSONObject("options");
+                bottomNavigation.setNotification(options.getString("text"), options.getInt("index"));
+            }
+        } catch (Exception e){
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+            JasonHelper.next("error", action, new JSONObject(), new JSONObject(), JasonViewActivity.this);
+        }
+    }
 
     /**
      * Renders a template using data
@@ -1462,6 +1492,8 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 final JSONObject item = items.getJSONObject(i);
                 if (item.has("badge")) {
                     bottomNavigation.setNotification(item.get("badge").toString(), i);
+                } else {
+                    bottomNavigation.setNotification("", i);
                 }
             }
 

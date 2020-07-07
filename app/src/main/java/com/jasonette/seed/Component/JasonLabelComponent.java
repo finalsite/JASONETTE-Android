@@ -13,10 +13,11 @@ import org.json.JSONObject;
 public class JasonLabelComponent {
 
     public static View build(View view, final JSONObject component, final JSONObject parent, final Context context) {
-        if(view == null){
-            return new TextView(context);
-        } else {
-            try {
+
+        try {
+            if(view == null || component.getString("text").length() == 0){
+                return new TextView(context);
+            } else {
                 ((TextView)view).setText(component.getString("text"));
                 JasonComponent.build(view, component, parent, context);
 
@@ -78,11 +79,10 @@ public class JasonLabelComponent {
 
                 view.requestLayout();
                 return view;
-
-            } catch (Exception e){
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
-                return new View(context);
             }
+        } catch (Exception e){
+            Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+            return new View(context);
         }
     }
 }

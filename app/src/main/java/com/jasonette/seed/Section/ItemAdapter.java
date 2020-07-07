@@ -672,6 +672,12 @@ public class ItemAdapter extends RecyclerView.Adapter <ItemAdapter.ViewHolder>{
                         }
                     }
 
+                    if(style.has("opacity"))
+                    {
+                        float opacity = (float) style.getDouble("opacity");
+                        layout.setAlpha(opacity);
+                    }
+
                     // align
                     if (style.has("align")) {
                         if (style.getString("align").equalsIgnoreCase("center")) {
