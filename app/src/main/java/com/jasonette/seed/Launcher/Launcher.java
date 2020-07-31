@@ -15,6 +15,7 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.jasonette.seed.Core.JasonModel;
+import com.jasonette.seed.Core.JasonStylesheet;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.R;
@@ -46,6 +47,7 @@ public class Launcher extends Application {
     private JSONObject global;
     private JSONObject env;
     private JSONObject models;
+    private static JasonStylesheet stylesheet;
     public JSONObject services;
     private static Context currentContext;
     private OkHttpClient httpClient;
@@ -59,6 +61,10 @@ public class Launcher extends Application {
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
+    }
+
+    public static JasonStylesheet getStyleSheet() {
+        return stylesheet;
     }
 
     // get current context from anywhere
@@ -162,6 +168,7 @@ public class Launcher extends Application {
             services.put("JasonWebsocketService", websocketService);
             services.put("JasonAgentService", agentService);
 
+            stylesheet = new JasonStylesheet();
 
             // handler init
             handlers = new JSONObject();

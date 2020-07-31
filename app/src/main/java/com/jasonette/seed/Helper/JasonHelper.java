@@ -43,8 +43,8 @@ public class JasonHelper {
                 String[] style_classes = style_class_string.split("\\s+");
                 for(int i = 0 ; i < style_classes.length ; i++){
 
-                    if (activity.stylesheet.has(style_classes[i])) {
-                        JSONObject astyle = activity.stylesheet.getJSONObject(style_classes[i]);
+                    if (Launcher.getStyleSheet().has(style_classes[i])) {
+                        JSONObject astyle = Launcher.getStyleSheet().getJSONObject(style_classes[i]);
                         Iterator iterator = astyle.keys();
                         String style_key;
                         while (iterator.hasNext()) {
