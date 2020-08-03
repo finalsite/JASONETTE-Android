@@ -93,7 +93,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
     public JasonModel model;
     public JSONObject preload;
     public Integer depth;
-    public JasonStylesheet stylesheet;
     private static Integer MINIMUM_FRAGMENTS = 2;
 
     public boolean loaded;
@@ -133,8 +132,6 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
         // Initialize Parser instance
         JasonParser.getInstance(this);
-
-        stylesheet = new JasonStylesheet();
 
         // Setup Layouts
         setContentView(R.layout.jason_view_activity_layout);

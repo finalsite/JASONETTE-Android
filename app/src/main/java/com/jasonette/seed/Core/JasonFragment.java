@@ -1396,7 +1396,7 @@ public class JasonFragment extends Fragment {
             try {
                 // If the request returned "head_styles" we want to update the model to be able to use them for rendering.
                 JSONObject template_styles = data.getJSONObject("$get").getJSONObject("head_styles");
-                ((JasonViewActivity) context).stylesheet.merge(template_styles);
+                Launcher.getStyleSheet().merge(template_styles);
             } catch (JSONException e) {}
 
             JSONObject templates = head.getJSONObject("templates");
@@ -1594,7 +1594,7 @@ public class JasonFragment extends Fragment {
                     JasonViewActivity activity = (JasonViewActivity) getActivity();
                     JSONObject head = jason.getJSONObject("$jason").getJSONObject("head");
                     if (head.has("styles")) {
-                        activity.stylesheet.merge(head.getJSONObject("styles"));
+                        Launcher.getStyleSheet().merge(head.getJSONObject("styles"));
                     }
                 } catch (Exception e) { }
                 if (jason.getJSONObject("$jason").has("body")) {
