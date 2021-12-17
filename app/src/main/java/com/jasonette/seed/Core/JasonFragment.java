@@ -8,8 +8,11 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RectShape;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -17,6 +20,7 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -50,7 +54,6 @@ import com.jasonette.seed.Service.vision.JasonVisionService;
 import com.jasonette.seed.R;
 
 import com.jasonette.seed.Section.ItemAdapter;
-import com.yqritc.recyclerviewflexibledivider.HorizontalDividerItemDecoration;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -87,7 +90,6 @@ public class JasonFragment extends Fragment {
     private boolean fetched;
     private boolean resumed;
 
-    private ArrayList<JSONObject> section_items;
     public HashMap<String, Object> modules;
     private SwipeRefreshLayout swipeLayout;
     public LinearLayout sectionLayout;
@@ -98,7 +100,7 @@ public class JasonFragment extends Fragment {
     public ImageView backgroundImageView;
     private SurfaceView backgroundCameraView;
     public JasonVisionService cameraManager;
-    private HorizontalDividerItemDecoration divider;
+    private DividerItemDecoration divider;
     private String previous_background;
     private JSONObject launch_action;
     private ArrayList<JSONObject> event_queue;
@@ -245,10 +247,8 @@ public class JasonFragment extends Fragment {
             if (intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
                 // first time launch
                 String launch_url = getString(R.string.launch);
-                if (launch_url != null && launch_url.length() > 0) {
-                    // if preload is specified, use that url
-                    preload = (JSONObject)JasonHelper.read_json(launch_url, context);
-                }
+                // if preload is specified, use that url
+                preload = (JSONObject)JasonHelper.read_json(launch_url, context);
             }
         }
 
@@ -1770,7 +1770,7 @@ public class JasonFragment extends Fragment {
 
                                     with(context).load(bs).into(new SimpleTarget<Drawable>() {
                                         @Override
-                                        public void onResourceReady(Drawable resource, Transition<? super Drawable> glideAnimation) {
+                                        public void onResourceReady(@NonNull Drawable resource, Transition<? super Drawable> glideAnimation) {
                                             sectionLayout.setBackground(resource);
                                         }
                                     });
@@ -1802,19 +1802,17 @@ public class JasonFragment extends Fragment {
                                     backgroundWebview.getSettings().setUserAgentString(backgroundWebview.getSettings().getUserAgentString().replace("; wv", "") + " Finalsite-App/" + BuildConfig.VERSION_NAME);
                                     backgroundWebview.setVisibility(View.VISIBLE);
                                     // not interactive by default;
-                                    Boolean responds_to_webview = false;
+                                    boolean responds_to_webview = false;
 
                                     /**
-
-                                     if has an 'action' attribute
-                                     - if the action is "type": "$default"
-                                     => Allow touch. The visit will be handled in the agent handler
-                                     - if the action is everything else
-                                     => Allow touch. The visit will be handled in the agent handler
-                                     if it doesn't have an 'action' attribute
-                                     => Don't allow touch.
-
-                                     **/
+                                     * if has an 'action' attribute
+                                     * - if the action is "type": "$default"
+                                     * => Allow touch. The visit will be handled in the agent handler
+                                     * - if the action is everything else
+                                     * => Allow touch. The visit will be handled in the agent handler
+                                     * if it doesn't have an 'action' attribute
+                                     * => Don't allow touch.
+                                     */
                                     if (background.has("action")) {
                                         responds_to_webview = true;
                                     }
@@ -1882,11 +1880,7 @@ public class JasonFragment extends Fragment {
                     rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                         @Override
                         public void onGlobalLayout() {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                            } else {
-                                rootLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                            }
+                            rootLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                             if (focusView != null) {
                                 focusView.requestFocus();
                                 InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -1918,11 +1912,16 @@ public class JasonFragment extends Fragment {
                         if (!border.equalsIgnoreCase("none")) {
                             int color = JasonHelper.parse_color(border);
                             listView.removeItemDecoration(divider);
-                            divider = new HorizontalDividerItemDecoration.Builder(context)
-                                    .color(color)
-                                    .showLastDivider()
-                                    .positionInsideItem(true)
-                                    .build();
+
+                            divider = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+                            RectShape rect = new RectShape();
+                            rect.resize(5,5);
+                            ShapeDrawable sdRect = new ShapeDrawable(rect);
+                            sdRect.getPaint().setColor(color);
+                            sdRect.getPaint().setStyle(Paint.Style.FILL);
+                            sdRect.setIntrinsicWidth(5);
+                            sdRect.setIntrinsicHeight(5);
+                            divider.setDrawable(sdRect);
                             listView.addItemDecoration(divider);
                         }
                     } else {
@@ -1999,7 +1998,7 @@ public class JasonFragment extends Fragment {
     }
 
     private void setup_sections(JSONArray sections){
-        section_items = new ArrayList<JSONObject>();
+        ArrayList<JSONObject> section_items = new ArrayList<JSONObject>();
         if (sections != null) {
             try {
                 for (int i = 0; i < sections.length(); i++) {

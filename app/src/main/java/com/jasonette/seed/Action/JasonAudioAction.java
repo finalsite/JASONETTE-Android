@@ -16,10 +16,8 @@ import org.json.JSONObject;
 
 import java.io.InputStream;
 
-import cafe.adriel.androidaudiorecorder.AndroidAudioRecorder;
-import cafe.adriel.androidaudiorecorder.model.AudioChannel;
-import cafe.adriel.androidaudiorecorder.model.AudioSampleRate;
-import cafe.adriel.androidaudiorecorder.model.AudioSource;
+import android.media.MediaRecorder;
+
 import timber.log.Timber;
 
 public class JasonAudioAction {
@@ -161,21 +159,16 @@ public class JasonAudioAction {
                 }
             }
 
-            String filePath = Environment.getExternalStorageDirectory() + "/recorded_audio.m4a";
+            String filePath = Environment.getExternalStorageDirectory() + "/recorded_audio";
             int requestCode = (int)(System.currentTimeMillis() % 10000);
-            AndroidAudioRecorder.with((JasonViewActivity)context)
-                    .setFilePath(filePath)
-                    .setColor(color)
-                    .setRequestCode(requestCode)
 
-                    .setSource(AudioSource.MIC)
-
-                    .setChannel(AudioChannel.STEREO)
-                    .setSampleRate(AudioSampleRate.HZ_48000)
-                    .setAutoStart(true)
-                    .setKeepDisplayOn(true)
-
-                    .record();
+            MediaRecorder recorder = new MediaRecorder();
+            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            recorder.setOutputFile(filePath);
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            recorder.prepare();
+            recorder.start();
 
             try {
                 mFileUrl = "file://" + filePath;
