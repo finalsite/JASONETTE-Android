@@ -411,6 +411,16 @@ public class JasonUtilAction {
                                         JasonHelper.next("success", action, new JSONObject(), event, context);
                                         context.startActivity(Intent.createChooser(callback_intent, "Share"));
                                     }
+                                } else if (type.equalsIgnoreCase("url")) {
+                                    callback_intent.putExtra(Intent.EXTRA_TEXT, item.get("url").toString());
+                                    if (callback_intent.getType() == null) {
+                                        callback_intent.setType("text/plain");
+                                    }
+                                    counter++;
+                                    if (counter == l) {
+                                        JasonHelper.next("success", action, new JSONObject(), event, context);
+                                        context.startActivity(Intent.createChooser(callback_intent, "Share"));
+                                    }
                                 } else if (type.equalsIgnoreCase("image")) {
                                     // Fetch remote url
                                     // Turn it into Bitmap
