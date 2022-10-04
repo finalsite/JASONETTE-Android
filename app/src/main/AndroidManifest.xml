@@ -86,16 +86,14 @@
          -->
 
         <!-- Push notification services/meta-data -->
-        <service
-            android:name=".Service.push.JasonPushMessageService" android:exported="true">
+        <service android:name=".Service.push.JasonPushMessageService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
 
 
-        <service
-            android:name=".Service.push.JasonPushRegisterService" android:exported="true">
+        <service android:name=".Service.push.JasonPushRegisterService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
             </intent-filter>

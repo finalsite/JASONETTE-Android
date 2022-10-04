@@ -3,7 +3,7 @@ package com.jasonette.seed.Action;
 import android.content.Context;
 import android.util.Log;
 
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.jasonette.seed.Core.JasonViewActivity;
 import com.jasonette.seed.Helper.JasonHelper;
 import com.jasonette.seed.Launcher.Launcher;
@@ -17,22 +17,23 @@ import org.json.JSONObject;
 
 public class JasonPushAction {
     public void register(final JSONObject action, JSONObject data, final JSONObject event, Context context) {
-        String refreshedToken = FirebaseInstanceId.getInstance().getToken();
-
-        if(refreshedToken != null){
-            // Token exists => already registered => Immediately trigger $push.onregister
-            try {
-                JSONObject response = new JSONObject();
-                JSONObject payload = new JSONObject();
-                payload.put("token", refreshedToken);
-                response.put("$jason", payload);
-                ((JasonViewActivity)Launcher.getCurrentContext()).simple_trigger("$push.onregister", response, Launcher.getCurrentContext());
-            } catch (Exception e) {
-                Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(refreshedToken -> {
+            if(refreshedToken != null){
+                // Token exists => already registered => Immediately trigger $push.onregister
+                try {
+                    JSONObject response = new JSONObject();
+                    JSONObject payload = new JSONObject();
+                    payload.put("token", refreshedToken);
+                    response.put("$jason", payload);
+                    ((JasonViewActivity)Launcher.getCurrentContext()).simple_trigger("$push.onregister", response, Launcher.getCurrentContext());
+                } catch (Exception e) {
+                    Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
+                }
+            } else {
+                // Token doesn't exist => ignore => JasonPushRegisterService will take care of $push.onregister
             }
-        } else {
-            // Token doesn't exist => ignore => JasonPushRegisterService will take care of $push.onregister
-        }
-        JasonHelper.next("success", action, data, event, context);
+            JasonHelper.next("success", action, data, event, context);
+        });
+
     }
 }
