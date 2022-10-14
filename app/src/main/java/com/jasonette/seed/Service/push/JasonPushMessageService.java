@@ -18,7 +18,15 @@ public class JasonPushMessageService extends FirebaseMessagingService {
     }
 
     @Override
+    public void onNewToken(String token) {
+        // TODO: figure out when this happens and how we should handle it
+        super.onNewToken(token);
+        Log.e("NEW_TOKEN", token);
+    }
+
+    @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+        super.onMessageReceived(remoteMessage);
         if (remoteMessage.getData().size() > 0) {
             Map<String, String> json = remoteMessage.getData();
             JSONObject payload = new JSONObject();

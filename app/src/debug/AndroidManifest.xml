@@ -27,14 +27,14 @@
         tools:replace="android:name"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".Core.SplashActivity" android:theme="@style/SplashTheme" >
+        <activity android:name=".Core.SplashActivity" android:theme="@style/SplashTheme" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" >
+        <activity android:name=".Core.JasonViewActivity" android:windowSoftInputMode="adjustResize" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
@@ -70,14 +70,12 @@
         -->
 
         <!-- Uncomment below to support push notification -->
-        <service
-            android:name=".Service.push.JasonPushRegisterService">
+        <service android:name=".Service.push.JasonPushRegisterService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
             </intent-filter>
         </service>
-        <service
-            android:name=".Service.push.JasonPushMessageService">
+        <service android:name=".Service.push.JasonPushMessageService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
