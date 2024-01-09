@@ -6,8 +6,8 @@ android {
         applicationId "com.finalsite.alexwdemoapp"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 4180200
-        versionName "4.18.2"
+        versionCode 4250000
+        versionName "4.25.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -101,7 +101,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
     implementation 'com.google.android.material:material:1.6.1'
     implementation 'androidx.legacy:legacy-support-core-ui:1.0.0'
-
+    implementation 'androidx.browser:browser:1.3.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

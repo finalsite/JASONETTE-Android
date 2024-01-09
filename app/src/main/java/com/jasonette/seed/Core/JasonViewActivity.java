@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.widget.LinearLayoutCompat;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -55,6 +56,7 @@ import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.transition.Transition;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.jasonette.seed.Action.JasonGlobalAction;
 import com.jasonette.seed.Component.JasonComponentFactory;
 import com.jasonette.seed.Component.JasonImageComponent;
 import com.jasonette.seed.Helper.JasonHelper;
@@ -930,10 +932,12 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
                 if(action_options.has("transition")){
                     transition = action_options.getString("transition");
                 }
-                // "view": "web"
                 if (action_options.has("view")) {
                     String view_type = action_options.getString("view");
-                    if (view_type.equalsIgnoreCase("web") || view_type.equalsIgnoreCase("app")) {
+                    if (view_type.equalsIgnoreCase("web")) { // "view": "web"
+                        launchChromeCustomTabs(this, url);
+                        return;
+                    } else if (view_type.equalsIgnoreCase("app")) { // "view": "app"
                         try {
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             intent.setData(Uri.parse(url));
@@ -1037,6 +1041,15 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         } catch (Exception e) {
             Log.d("Warning", e.getStackTrace()[0].getMethodName() + " : " + e.toString());
         }
+    }
+
+    public void launchChromeCustomTabs(Context context, String url) {
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+        builder.setShowTitle(true);
+        CustomTabsIntent customTabsIntent = builder.build();
+        customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        customTabsIntent.launchUrl(context, Uri.parse(url));
     }
 
     private void dispatchFragment(Intent intent, boolean replace) {
@@ -1183,6 +1196,66 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
     public void build(JSONObject jason) {
         currentFragment().build(jason);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        try {
+            // Check if the activity was started by a custom URL
+            if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+                String dataString = intent.getDataString();
+                if (dataString != null) {
+                    // Extract the token from the URI
+                    String token = extractTokenFromUri(dataString);
+                    try {
+                        // Create JSON objects
+                        JSONObject action = new JSONObject().put("user_token", token);
+                        JSONObject options = new JSONObject().put("options", action);
+
+                        // Perform global action
+                        JasonGlobalAction globalAction = new JasonGlobalAction();
+                        globalAction.set(options, new JSONObject(), new JSONObject(), this);
+
+                        // Reload the app
+                        reloadApp();
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+        private void reloadApp() {
+            // clear offline caches and tab models
+            ((Launcher) this.getApplicationContext()).clearTabModels();
+            getSharedPreferences("offline", 0).edit().clear().apply();
+            // Finish this activity as well as all activities immediately below it in the current task
+            Intent intent = new Intent(this, SplashActivity.class);
+            startActivity(intent);
+            finishAffinity();
+        }
+
+    private String extractTokenFromUri(String uriString) {
+        try {
+            // Split the URI string to get the query parameter "token"
+            String[] parts = uriString.split("\\?");
+            if (parts.length > 1) {
+                String[] queryParams = parts[1].split("&");
+                for (String queryParam : queryParams) {
+                    String[] keyValue = queryParam.split("=");
+                    if (keyValue.length == 2 && "token".equals(keyValue[0])) {
+                        return keyValue[1];
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void setup_header(JSONObject header){
