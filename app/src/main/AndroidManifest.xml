@@ -46,7 +46,7 @@
         </activity>
 
         <activity android:name=".Core.JasonViewActivity" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" android:exported="true"
-            tools:ignore="LockedOrientationActivity">
+            tools:ignore="LockedOrientationActivity" android:launchMode="singleInstance" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
@@ -70,6 +70,14 @@
                 <data android:scheme="http" android:host="oauth" />
             </intent-filter>
             -->
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="finalsiteapp" />
+            </intent-filter>
         </activity>
 
         <!--<activity-->
