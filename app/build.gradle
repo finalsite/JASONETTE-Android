@@ -6,8 +6,8 @@ android {
         applicationId "com.finalsite.alexwdemoapp"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 4250000
-        versionName "4.25.0"
+        versionCode 4240000
+        versionName "4.24.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
