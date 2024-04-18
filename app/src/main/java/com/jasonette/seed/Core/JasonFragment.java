@@ -256,7 +256,7 @@ public class JasonFragment extends Fragment {
         model = ((JasonViewActivity) context).createModel(url, intent);
 
         Uri uri = intent.getData();
-        if (uri != null && uri.getHost().contains("oauth")) {
+        if (uri != null && uri.getHost() != null && uri.getHost().contains("oauth")) {
             loaded = true; // in case of oauth process we need to set loaded to true since we know it's already been loaded.
             return rootLayout;
         }
@@ -518,7 +518,7 @@ public class JasonFragment extends Fragment {
         firstResume = false;
 
         Uri uri = intent.getData();
-        if(uri != null && uri.getHost().contains("oauth")) {
+        if(uri != null && uri.getHost() != null && uri.getHost().contains("oauth")) {
             try {
                 intent_to_resolve = new JSONObject();
                 intent_to_resolve.put("type", "success");
