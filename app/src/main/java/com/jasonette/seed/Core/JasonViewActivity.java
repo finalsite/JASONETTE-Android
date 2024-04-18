@@ -127,6 +127,7 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
 
         super.onCreate(savedInstanceState);
 
+        verifyGoogleAuth();
         createNotificationChannel();
 
         loaded = false;
@@ -1198,29 +1199,32 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         currentFragment().build(jason);
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
+    private void verifyGoogleAuth() {
+        // Handle intent data
         try {
-            // Check if the activity was started by a custom URL
-            if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
-                String dataString = intent.getDataString();
-                if (dataString != null) {
-                    // Extract the token from the URI
-                    String token = extractTokenFromUri(dataString);
-                    try {
-                        // Create JSON objects
-                        JSONObject action = new JSONObject().put("user_token", token);
-                        JSONObject options = new JSONObject().put("options", action);
+            Intent intent = getIntent();
+            if (intent != null) {
+                Uri data = intent.getData();
+                // Check if the activity was started by a custom URL
+                if (data != null && data.getScheme() != null && data.getScheme().equals("finalsiteapp")) {
+                    String dataString = intent.getDataString();
+                    if (dataString != null) {
+                        // Extract the token from the URI
+                        String token = extractTokenFromUri(dataString);
+                        try {
+                            // Create JSON objects
+                            JSONObject action = new JSONObject().put("user_token", token);
+                            JSONObject options = new JSONObject().put("options", action);
 
-                        // Perform global action
-                        JasonGlobalAction globalAction = new JasonGlobalAction();
-                        globalAction.set(options, new JSONObject(), new JSONObject(), this);
+                            // Perform global action
+                            JasonGlobalAction globalAction = new JasonGlobalAction();
+                            globalAction.set(options, new JSONObject(), new JSONObject(), this);
 
-                        // Reload the app
-                        reloadApp();
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
+                            // Reload the app
+                            reloadApp();
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }
@@ -1229,15 +1233,15 @@ public class JasonViewActivity extends AppCompatActivity implements ActivityComp
         }
     }
 
-        private void reloadApp() {
-            // clear offline caches and tab models
-            ((Launcher) this.getApplicationContext()).clearTabModels();
-            getSharedPreferences("offline", 0).edit().clear().apply();
-            // Finish this activity as well as all activities immediately below it in the current task
-            Intent intent = new Intent(this, SplashActivity.class);
-            startActivity(intent);
-            finishAffinity();
-        }
+    private void reloadApp() {
+        // clear offline caches and tab models
+        ((Launcher) this.getApplicationContext()).clearTabModels();
+        getSharedPreferences("offline", 0).edit().clear().apply();
+        // Finish this activity as well as all activities immediately below it in the current task
+        Intent intent = new Intent(this, SplashActivity.class);
+        startActivity(intent);
+        finishAffinity();
+    }
 
     private String extractTokenFromUri(String uriString) {
         try {
